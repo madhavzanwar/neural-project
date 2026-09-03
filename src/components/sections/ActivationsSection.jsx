@@ -21,6 +21,7 @@ import { Activity, Sliders, Check, HelpCircle } from 'lucide-react';
 export function ActivationsSection() {
   const [selectedFunction, setSelectedFunction] = useState('sigmoid');
   const [inputValue, setInputValue] = useState(1.0);
+  const [showTangent, setShowTangent] = useState(true);
 
   const activeActivation = ACTIVATIONS[selectedFunction] || ACTIVATIONS.sigmoid;
 
@@ -153,8 +154,21 @@ export function ActivationsSection() {
                 <Metric
                   label="Derivative f'(x)"
                   value={derivativeValue.toFixed(4)}
-                  subtext="Gradient transmission rate"
+                  subtext={`Slope: ${(Math.atan(derivativeValue) * 180 / Math.PI).toFixed(1)}°`}
                 />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="showTangentCheck"
+                  checked={showTangent}
+                  onChange={(e) => setShowTangent(e.target.checked)}
+                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <label htmlFor="showTangentCheck" className="text-xs text-slate-700 cursor-pointer font-medium">
+                  Show Tangent Slope Line on Curve
+                </label>
               </div>
 
               {/* Quick Preset Buttons */}
@@ -249,6 +263,20 @@ export function ActivationsSection() {
                     isAnimationActive={false}
                   />
 
+                  {/* Tangent slope line */}
+                  {showTangent && (
+                    <Line
+                      type="monotone"
+                      dataKey="tangent"
+                      stroke="#D97706"
+                      strokeWidth={2.5}
+                      dot={false}
+                      name="tangent"
+                      isAnimationActive={false}
+                      connectNulls={false}
+                    />
+                  )}
+
                   {/* Active Point on curve */}
                   <ReferenceDot
                     x={Number(inputValue.toFixed(2))}
@@ -273,6 +301,12 @@ export function ActivationsSection() {
                   <span className="w-3.5 h-1 bg-slate-500 rounded-xs border-b border-dashed border-slate-700"></span>
                   <span className="font-medium text-slate-800">f'(x) Derivative</span>
                 </span>
+                {showTangent && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-1 bg-amber-600 rounded-xs"></span>
+                    <span className="font-medium text-amber-800">Tangent Slope m={derivativeValue.toFixed(2)}</span>
+                  </span>
+                )}
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeActivation.color }}></span>
                   <span>Active Point (x={inputValue.toFixed(2)}, y={outputValue.toFixed(2)})</span>
