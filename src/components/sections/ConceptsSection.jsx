@@ -641,7 +641,7 @@ export function ConceptsSection() {
                   Q3: What causes the vanishing gradient problem in deep networks?
                 </span>
                 <p className="text-slate-700 leading-relaxed">
-                  <strong>Answer:</strong> The derivative of the Sigmoid function peaks at only 0.25 and approaches 0 for |x| > 3. When backpropagating through multiple hidden layers via the chain rule, gradients are multiplied by these small fractional derivatives (<code className="font-mono">0.25 · 0.25 · 0.25...</code>). The gradient signal exponentially decays toward zero as it approaches early layers, preventing them from learning. ReLU solves this because its derivative is exactly 1 for all positive activations.
+                  <strong>Answer:</strong> The derivative of the Sigmoid function peaks at only 0.25 and approaches 0 for |x| &gt; 3. When backpropagating through multiple hidden layers via the chain rule, gradients are multiplied by these small fractional derivatives (<code className="font-mono">0.25 · 0.25 · 0.25...</code>). The gradient signal exponentially decays toward zero as it approaches early layers, preventing them from learning. ReLU solves this because its derivative is exactly 1 for all positive activations.
                 </p>
               </div>
 
