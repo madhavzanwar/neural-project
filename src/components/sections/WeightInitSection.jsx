@@ -66,6 +66,31 @@ export function WeightInitSection() {
 
   const strategyConfig = INIT_STRATEGIES[selectedStrategy] || INIT_STRATEGIES.xavier;
 
+  // Weight distribution bins for visualization
+  const weightDistribution = useMemo(() => {
+    const allW = [];
+    for (const layer of currentNet.weights) {
+      for (const row of layer) {
+        for (const w of row) allW.push(w);
+      }
+    }
+    const bins = [
+      { label: '< -0.5', count: 0 },
+      { label: '-0.5 to -0.1', count: 0 },
+      { label: '-0.1 to +0.1', count: 0 },
+      { label: '+0.1 to +0.5', count: 0 },
+      { label: '> +0.5', count: 0 },
+    ];
+    for (const w of allW) {
+      if (w < -0.5) bins[0].count++;
+      else if (w < -0.1) bins[1].count++;
+      else if (w <= 0.1) bins[2].count++;
+      else if (w <= 0.5) bins[3].count++;
+      else bins[4].count++;
+    }
+    return { allW, bins, total: allW.length };
+  }, [currentNet]);
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Title */}
@@ -195,6 +220,30 @@ export function WeightInitSection() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Weight Distribution Histogram */}
+              <div className="pt-2 border-t border-slate-200">
+                <div className="text-slate-500 font-sans font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
+                  Weight Spread Histogram ({weightDistribution.total} weights)
+                </div>
+                <div className="space-y-1">
+                  {weightDistribution.bins.map((bin, bIdx) => {
+                    const pct = weightDistribution.total > 0 ? (bin.count / weightDistribution.total) * 100 : 0;
+                    return (
+                      <div key={bIdx} className="flex items-center gap-2 text-[10px] font-sans">
+                        <span className="w-16 text-slate-500 text-right truncate font-mono">{bin.label}:</span>
+                        <div className="flex-1 bg-slate-100 h-2.5 rounded overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-full rounded transition-all duration-300"
+                            style={{ width: `${pct}%` }}
+                          ></div>
+                        </div>
+                        <span className="w-6 text-slate-700 font-mono font-medium">{bin.count}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
