@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Formula } from '../common/Formula.jsx';
+import { VivaQuiz } from '../common/VivaQuiz.jsx';
 import {
   BookOpen,
   GraduationCap,
@@ -702,6 +703,9 @@ export function ConceptsSection() {
               </div>
             </div>
           </Card>
+
+          {/* Interactive Viva Voce Self-Assessment Quiz */}
+          <VivaQuiz />
         </div>
       )}
     </div>
