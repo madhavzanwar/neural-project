@@ -23,6 +23,8 @@ export function ForwardPropSection() {
 
   // Step state: 0 = Input, 1 = Hidden Neuron 1, 2 = Hidden Neuron 2, 3 = Output Layer
   const [activeStep, setActiveStep] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playSpeed, setPlaySpeed] = useState(1500);
 
   // Small, transparent educational network: 2 -> 2 -> 1
   const weights = useMemo(
@@ -101,6 +103,15 @@ export function ForwardPropSection() {
       activationFormula: `ŷ = σ(z_out) = 1 / (1 + e^(-${out_z.toFixed(4)})) = ${out_a.toFixed(4)}`,
     },
   ];
+
+  // Auto-play interval timer
+  React.useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length);
+    }, playSpeed);
+    return () => clearInterval(interval);
+  }, [isPlaying, playSpeed, steps.length]);
 
   const currentStepData = steps[activeStep];
 
@@ -183,13 +194,29 @@ export function ForwardPropSection() {
             title="Step-by-Step Controller"
             subtitle={`Step ${activeStep + 1} of ${steps.length}: ${currentStepData.title}`}
             action={
-              <button
-                onClick={() => setActiveStep(0)}
-                className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded cursor-pointer transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset to Start</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded cursor-pointer transition-colors font-medium ${
+                    isPlaying
+                      ? 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                      : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                  }`}
+                >
+                  <Play className={`w-3.5 h-3.5 ${isPlaying ? 'fill-amber-700' : ''}`} />
+                  <span>{isPlaying ? 'Pause Auto-Play' : 'Auto-Play Walkthrough'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsPlaying(false);
+                    setActiveStep(0);
+                  }}
+                  className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded cursor-pointer transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset</span>
+                </button>
+              </div>
             }
           >
             <div className="space-y-4">
