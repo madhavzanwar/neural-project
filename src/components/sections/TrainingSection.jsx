@@ -242,6 +242,15 @@ export function TrainingSection() {
       {/* Control Panel */}
       <Card
         title="Training Controls & Hyperparameters"
+        badge={
+          currentEval.avgLoss < 0.02 && currentEval.accuracy === 100 ? (
+            <Badge variant="success">Converged (100% Acc)</Badge>
+          ) : epoch > 0 ? (
+            <Badge variant="unit2">Epoch {epoch}</Badge>
+          ) : (
+            <Badge variant="default">Ready</Badge>
+          )
+        }
         action={
           <div className="flex items-center gap-2">
             <button
@@ -263,6 +272,15 @@ export function TrainingSection() {
             >
               <StepForward className="w-3.5 h-3.5" />
               <span>+1 Epoch</span>
+            </button>
+
+            <button
+              disabled={isTraining}
+              onClick={() => stepTraining(10)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors"
+            >
+              <StepForward className="w-3.5 h-3.5" />
+              <span>+10 Epochs</span>
             </button>
 
             <button
