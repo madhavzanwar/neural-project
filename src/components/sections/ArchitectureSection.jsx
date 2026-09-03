@@ -25,6 +25,34 @@ export function ArchitectureSection() {
     return initNetwork(layerSizes, 'xavier');
   }, [layerSizes, seed]);
 
+  // Compute exact matrix dimensions and parameter count
+  const parameterStats = useMemo(() => {
+    let totalWeights = 0;
+    let totalBiases = 0;
+    const layerStats = [];
+
+    for (let l = 0; l < layerSizes.length - 1; l++) {
+      const inNodes = layerSizes[l];
+      const outNodes = layerSizes[l + 1];
+      const wCount = inNodes * outNodes;
+      const bCount = outNodes;
+      totalWeights += wCount;
+      totalBiases += bCount;
+      layerStats.push({
+        layerIdx: l,
+        fromName: l === 0 ? 'Input' : 'Hidden ' + l,
+        toName: l === layerSizes.length - 2 ? 'Output' : 'Hidden ' + (l + 1),
+        wShape: '[' + outNodes + ' x ' + inNodes + ']',
+        bShape: '[' + outNodes + ']',
+        wCount,
+        bCount,
+        total: wCount + bCount,
+      });
+    }
+
+    return { totalWeights, totalBiases, totalParams: totalWeights + totalBiases, layerStats };
+  }, [layerSizes]);
+
   // Calculate neuron coordinates in SVG space
   const svgWidth = 720;
   const svgHeight = 360;
@@ -209,6 +237,68 @@ export function ArchitectureSection() {
               <span>Select "2 Layers" above to configure a second hidden layer.</span>
             </div>
           )}
+        </div>
+      </Card>
+
+      {/* Layer Matrix Dimensions & Trainable Parameter Audit */}
+      <Card
+        title="Layer Matrix Dimensions and Parameter Accounting"
+        subtitle="Mathematical tensor dimensions and total learnable parameters"
+        badge={<Badge variant="navy">{parameterStats.totalParams} Trainable Parameters</Badge>}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+            <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold block mb-1">
+              Synaptic Weights (W)
+            </span>
+            <div className="text-lg font-bold font-mono text-blue-900">{parameterStats.totalWeights}</div>
+            <span className="text-[11px] text-slate-500">Multiplicative connection parameters</span>
+          </div>
+
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+            <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold block mb-1">
+              Neuron Biases (b)
+            </span>
+            <div className="text-lg font-bold font-mono text-blue-900">{parameterStats.totalBiases}</div>
+            <span className="text-[11px] text-slate-500">Threshold shift parameters</span>
+          </div>
+
+          <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-md">
+            <span className="text-blue-800 uppercase tracking-wider text-[10px] font-bold block mb-1">
+              Total Trainable Parameters
+            </span>
+            <div className="text-lg font-bold font-mono text-blue-950">{parameterStats.totalParams}</div>
+            <span className="text-[11px] text-blue-700">Weights + Biases combined</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto border border-slate-200 rounded-md">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th className="py-2 px-3">Connection Gap</th>
+                <th className="py-2 px-3">Weight Matrix Shape [Out x In]</th>
+                <th className="py-2 px-3">Bias Vector Shape</th>
+                <th className="py-2 px-3">Weights Count</th>
+                <th className="py-2 px-3">Biases Count</th>
+                <th className="py-2 px-3 font-bold">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 font-mono">
+              {parameterStats.layerStats.map((st) => (
+                <tr key={st.layerIdx} className="hover:bg-slate-50">
+                  <td className="py-1.5 px-3 font-sans font-medium text-slate-800">
+                    {st.fromName} → {st.toName}
+                  </td>
+                  <td className="py-1.5 px-3 text-blue-900 font-semibold">{st.wShape}</td>
+                  <td className="py-1.5 px-3 text-slate-700">{st.bShape}</td>
+                  <td className="py-1.5 px-3">{st.wCount}</td>
+                  <td className="py-1.5 px-3">{st.bCount}</td>
+                  <td className="py-1.5 px-3 font-bold text-slate-900">{st.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </Card>
 
