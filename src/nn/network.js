@@ -78,6 +78,16 @@ export function initNetwork(layerSizes, strategy = 'xavier') {
 // Computes pre-activations: z[l] = W[l] · a[l-1] + b[l]
 // Computes post-activations: a[l] = activation(z[l])
 // -----------------------------------------------------------------------------
+export function getHiddenActivationType(hiddenActivationTypes, layerIdx = 0) {
+  if (typeof hiddenActivationTypes === 'string') {
+    return hiddenActivationTypes;
+  }
+  if (Array.isArray(hiddenActivationTypes)) {
+    return hiddenActivationTypes[layerIdx] || hiddenActivationTypes[0] || 'relu';
+  }
+  return 'relu';
+}
+
 /**
  * Propagates one input through all layers, recording intermediate z and a vectors.
  * @param {number[]} input - Input vector, e.g. [x1, x2]
@@ -113,7 +123,7 @@ export function forwardPass(
     });
 
     const isOutput = l === L - 1;
-    const activType = isOutput ? outputActivationType : (hiddenActivationTypes[l] || 'relu');
+    const activType = isOutput ? outputActivationType : getHiddenActivationType(hiddenActivationTypes, l);
     const activationFn = (ACTIVATIONS[activType] || ACTIVATIONS.sigmoid).fn;
 
     preActivations.push(z);
@@ -135,9 +145,10 @@ export function computeLoss(predictions, targets) {
   const eps = 1e-12; // Prevent log(0)
   let total = 0;
   for (let i = 0; i < predictions.length; i++) {
-    const p = Math.max(eps, Math.min(1 - eps, predictions[i][0]));
-    const y = targets[i];
-    total -= y * Math.log(p) + (1 - y) * Math.log(1 - p);
+    const rawP = Array.isArray(predictions[i]) ? predictions[i][0] : predictions[i];
+    const p = Math.max(eps, Math.min(1 - eps, rawP));
+    const rawY = Array.isArray(targets[i]) ? targets[i][0] : targets[i];
+    total -= rawY * Math.log(p) + (1 - rawY) * Math.log(1 - p);
   }
   return total / predictions.length;
 }
@@ -149,8 +160,8 @@ export function computeLoss(predictions, targets) {
 export function computeMSE(predictions, targets) {
   let total = 0;
   for (let i = 0; i < predictions.length; i++) {
-    const p = predictions[i][0];
-    const y = targets[i];
+    const p = Array.isArray(predictions[i]) ? predictions[i][0] : predictions[i];
+    const y = Array.isArray(targets[i]) ? targets[i][0] : targets[i];
     const diff = p - y;
     total += diff * diff;
   }
@@ -178,11 +189,12 @@ export function backprop(
   const deltas = new Array(L + 1).fill(null);
 
   // 1. Output layer error delta: (a[L] - y) for sigmoid + BCE
-  deltas[L] = activations[L].map((val, j) => val - targets[j]);
+  const targetArr = Array.isArray(targets) ? targets : [targets];
+  deltas[L] = activations[L].map((val, j) => val - targetArr[j]);
 
   // 2. Backward propagation through hidden layers
   for (let l = L - 1; l >= 1; l--) {
-    const activType = hiddenActivationTypes[l - 1] || 'relu';
+    const activType = getHiddenActivationType(hiddenActivationTypes, l - 1);
     const actDeriv = (ACTIVATIONS[activType] || ACTIVATIONS.relu).derivative;
     const z = preActivations[l];
     const nextDelta = deltas[l + 1];

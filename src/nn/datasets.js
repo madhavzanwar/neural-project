@@ -47,7 +47,7 @@ export const OR_DATA = [
  * Mulberry32 seeded pseudo-random number generator for deterministic dataset generation.
  */
 function seededPRNG(seed = 42) {
-  let a = seed >>> 0;
+  let a = (seed !== undefined && seed !== null && seed !== 0 ? seed : 123456789) >>> 0;
   return function () {
     a |= 0;
     a = (a + 0x6d2b79f5) | 0;

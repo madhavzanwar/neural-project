@@ -121,6 +121,16 @@ describe('Neural Network Mathematical Core', () => {
       expect(Number.isFinite(loss)).toBe(true);
       expect(loss).toBeGreaterThan(0);
     });
+
+    it('gracefully handles 1D array predictions in computeLoss and computeMSE', () => {
+      const preds1D = [0.9, 0.1];
+      const targets = [1, 0];
+      const loss = computeLoss(preds1D, targets);
+      expect(loss).toBeCloseTo(-Math.log(0.9), 5);
+
+      const mse = computeMSE(preds1D, targets);
+      expect(Number.isFinite(mse)).toBe(true);
+    });
   });
 
   describe('Backpropagation & Parameter Updates (Syllabus Unit II)', () => {
@@ -158,6 +168,16 @@ describe('Neural Network Mathematical Core', () => {
       expect(updated.weights[0][0][0]).toBeCloseTo(0.9, 5);
       expect(updated.weights[0][0][1]).toBeCloseTo(2.2, 5);
       expect(updated.biases[0][0]).toBeCloseTo(0.45, 5);
+    });
+
+    it('supports string activation types and scalar targets in backprop', () => {
+      const net = initNetwork([2, 3, 1], 'xavier');
+      const { activations, preActivations } = forwardPass([0.5, 0.5], net.weights, net.biases, 'tanh', 'sigmoid');
+      // Pass scalar target 1 instead of [1]
+      const { dWeights, dBiases } = backprop(1, activations, preActivations, net.weights, 'tanh');
+      expect(dWeights).toHaveLength(2);
+      expect(dBiases).toHaveLength(2);
+      expect(Number.isFinite(dWeights[0][0][0])).toBe(true);
     });
   });
 
