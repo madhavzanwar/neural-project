@@ -48,4 +48,25 @@ describe('Educational Datasets (Syllabus Unit I)', () => {
     expect(DATASETS.or.separable).toBe(true);
     expect(DATASETS.circles.separable).toBe(false);
   });
+
+  it('generates exact point count even when points is odd without dropping samples', () => {
+    const circles41 = generateCirclesData(41, 0.02, 42);
+    expect(circles41).toHaveLength(41);
+    const class0 = circles41.filter(d => d.label === 0);
+    const class1 = circles41.filter(d => d.label === 1);
+    expect(class0).toHaveLength(21);
+    expect(class1).toHaveLength(20);
+  });
+
+  it('generates single point when points = 1 without returning empty array', () => {
+    const circles1 = generateCirclesData(1, 0.02, 42);
+    expect(circles1).toHaveLength(1);
+    expect(circles1[0]).toHaveProperty('input');
+    expect(circles1[0]).toHaveProperty('label');
+  });
+
+  it('returns empty array when points <= 0', () => {
+    expect(generateCirclesData(0)).toEqual([]);
+    expect(generateCirclesData(-10)).toEqual([]);
+  });
 });

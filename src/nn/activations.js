@@ -86,15 +86,20 @@ export const ACTIVATIONS = {
  * @returns {Array<{ x: number, y: number, derivative: number, tangent: number|null }>}
  */
 export function computeActivationCurve(activType, xMin = -4, xMax = 4, numPoints = 81, currentX = null) {
-  const activ = ACTIVATIONS[activType] || ACTIVATIONS.sigmoid;
+  if (numPoints <= 0) return [];
+  const key = typeof activType === 'string' ? activType.toLowerCase().trim() : 'sigmoid';
+  const activ = ACTIVATIONS[key] || ACTIVATIONS.sigmoid;
   const fn = activ.fn;
   const deriv = activ.derivative;
 
   return Array.from({ length: numPoints }, (_, i) => {
-    const x = xMin + (i / (numPoints - 1)) * (xMax - xMin);
+    const x = numPoints === 1
+      ? (xMin + xMax) / 2
+      : xMin + (i / (numPoints - 1)) * (xMax - xMin);
     const y = fn(x);
     const d = deriv(x);
-    const tangent = (currentX !== null && Math.abs(x - currentX) <= 1.2)
+    const isCurrentValid = typeof currentX === 'number' && Number.isFinite(currentX);
+    const tangent = (isCurrentValid && Math.abs(x - currentX) <= 1.2)
       ? fn(currentX) + deriv(currentX) * (x - currentX)
       : null;
     return {

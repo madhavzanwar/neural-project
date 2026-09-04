@@ -3,6 +3,7 @@ import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Formula } from '../common/Formula.jsx';
 import { Metric } from '../common/Metric.jsx';
+import { Slider } from '../common/Slider.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
 import { ACTIVATIONS, computeActivationCurve } from '../../nn/activations.js';
 import {
@@ -17,6 +18,35 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { Activity, Sliders, Check, HelpCircle } from 'lucide-react';
+
+const CustomActivationTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-lg rounded-xl p-3 text-xs min-w-[190px]">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
+        <span className="text-[10px] font-semibold text-slate-500 uppercase">Input Domain</span>
+        <span className="font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded text-[11px]">
+          x = {Number(label).toFixed(2)}
+        </span>
+      </div>
+      <div className="space-y-1.5">
+        {payload.map((entry, idx) => (
+          <div key={`item-${idx}`} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+              <span className="text-slate-600 font-medium">
+                {entry.name === 'y' ? 'f(x) Output' : entry.name === 'derivative' ? "f'(x) Gradient" : 'Tangent Slope'}
+              </span>
+            </div>
+            <span className="font-mono font-bold text-slate-900">
+              {typeof entry.value === 'number' ? entry.value.toFixed(4) : entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export function ActivationsSection() {
   const [selectedFunction, setSelectedFunction] = useState('sigmoid');
@@ -120,28 +150,17 @@ export function ActivationsSection() {
           >
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-700 mb-1.5">
-                  <span>Input Value (x):</span>
-                  <span className="font-mono text-blue-900 text-sm font-bold bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                    {inputValue.toFixed(2)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="-4"
-                  max="4"
-                  step="0.05"
+                <Slider
+                  label="Input Value (x)"
                   value={inputValue}
-                  onChange={(e) => setInputValue(parseFloat(e.target.value))}
-                  className="w-full accent-blue-600 cursor-pointer"
+                  min={-4}
+                  max={4}
+                  step={0.05}
+                  valueDisplay={`x = ${inputValue.toFixed(2)}`}
+                  ticks={['-4.0', '-2.0', '0.0', '+2.0', '+4.0']}
+                  color={activeActivation.color}
+                  onChange={(val) => setInputValue(val)}
                 />
-                <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
-                  <span>-4.0</span>
-                  <span>-2.0</span>
-                  <span>0.0</span>
-                  <span>+2.0</span>
-                  <span>+4.0</span>
-                </div>
               </div>
 
               {/* Calculated Outputs */}
@@ -223,19 +242,7 @@ export function ActivationsSection() {
                     }
                     tick={{ fontSize: 11, fill: '#64748b' }}
                   />
-                  <Tooltip
-                    formatter={(val, name) => [
-                      typeof val === 'number' ? val.toFixed(4) : val,
-                      name === 'y' ? 'f(x) Output' : name === 'derivative' ? "f'(x) Gradient" : name,
-                    ]}
-                    labelFormatter={(label) => `Input x = ${Number(label).toFixed(2)}`}
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                    }}
-                  />
+                  <Tooltip content={<CustomActivationTooltip />} />
                   {/* Origin zero reference line */}
                   <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="2 2" />
                   <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="2 2" />
@@ -277,14 +284,26 @@ export function ActivationsSection() {
                     />
                   )}
 
-                  {/* Active Point on curve */}
+                  {/* Projected Crosshairs */}
+                  <ReferenceLine x={Number(inputValue.toFixed(2))} stroke={activeActivation.color} strokeDasharray="3 3" strokeWidth={1.5} strokeOpacity={0.65} />
+                  <ReferenceLine y={outputValue} stroke={activeActivation.color} strokeDasharray="3 3" strokeWidth={1.5} strokeOpacity={0.65} />
+
+                  {/* Active Point on curve with Outer Pulsing Halo */}
                   <ReferenceDot
                     x={Number(inputValue.toFixed(2))}
                     y={outputValue}
-                    r={6}
+                    r={12}
+                    fill={activeActivation.color}
+                    fillOpacity={0.2}
+                    stroke="none"
+                  />
+                  <ReferenceDot
+                    x={Number(inputValue.toFixed(2))}
+                    y={outputValue}
+                    r={5.5}
                     fill={activeActivation.color}
                     stroke="#ffffff"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                   />
                 </LineChart>
               </ResponsiveContainer>

@@ -35,10 +35,22 @@ import { forwardPass, computeLoss, backprop, updateWeights } from './network.js'
 export function trainOneEpoch(
   weights,
   biases,
-  hiddenActivationTypes,
-  lr,
+  hiddenActivationTypes = ['relu'],
+  lr = 0.3,
   dataset = XOR_DATA
 ) {
+  if (!dataset || dataset.length === 0) {
+    return {
+      weights,
+      biases,
+      loss: 0,
+      accuracy: 0,
+      predictions: [],
+      avgDW: weights.map(W => W.map(row => row.map(() => 0))),
+      avgDB: biases.map(b => b.map(() => 0)),
+    };
+  }
+
   const L = weights.length;
   const N = dataset.length;
 
@@ -62,17 +74,20 @@ export function trainOneEpoch(
 
     const outputProb = activations[L][0];
     allPredictions.push(activations[L]);
-    allTargets.push(label);
+    const targetVal = Array.isArray(label) ? label[0] : label;
+    allTargets.push(targetVal);
 
     // Calculate real classification accuracy (threshold = 0.5)
-    const predictedClass = outputProb >= 0.5 ? 1 : 0;
-    if (predictedClass === label) {
+    // Guard against NaN so invalid predictions are never counted as correct
+    const isFiniteOutput = Number.isFinite(outputProb);
+    const predictedClass = isFiniteOutput ? (outputProb >= 0.5 ? 1 : 0) : -1;
+    if (isFiniteOutput && predictedClass === targetVal) {
       correctCount++;
     }
 
     // 2. Analytical backpropagation (Chain Rule)
     const { dWeights, dBiases } = backprop(
-      [label],
+      Array.isArray(label) ? label : [label],
       activations,
       preActivations,
       weights,
@@ -105,7 +120,7 @@ export function trainOneEpoch(
 
   // 6. Compute genuine loss and accuracy
   const loss = computeLoss(allPredictions, allTargets);
-  const accuracy = (correctCount / N) * 100;
+  const accuracy = N > 0 ? (correctCount / N) * 100 : 0;
 
   return {
     weights: newWeights,
@@ -125,9 +140,19 @@ export function trainOneEpoch(
 export function evaluateDataset(
   weights,
   biases,
-  hiddenActivationTypes,
+  hiddenActivationTypes = ['relu'],
   dataset = XOR_DATA
 ) {
+  if (!dataset || dataset.length === 0) {
+    return {
+      results: [],
+      accuracy: 0,
+      avgLoss: 0,
+      correctCount: 0,
+      totalCount: 0,
+    };
+  }
+
   const L = weights.length;
   let correctCount = 0;
   const eps = 1e-12;
@@ -142,16 +167,20 @@ export function evaluateDataset(
     );
 
     const rawOutput = activations[L][0];
-    const predictedClass = rawOutput >= 0.5 ? 1 : 0;
-    const isCorrect = predictedClass === label;
+    const isFiniteOutput = Number.isFinite(rawOutput);
+    const targetVal = Array.isArray(label) ? label[0] : label;
+    const predictedClass = isFiniteOutput ? (rawOutput >= 0.5 ? 1 : 0) : -1;
+    const isCorrect = isFiniteOutput && predictedClass === targetVal;
     if (isCorrect) correctCount++;
 
     // Distance from decision boundary (0.5), scaled from 0% to 100%
-    const confidence = Math.abs(rawOutput - 0.5) * 2 * 100;
+    const confidence = isFiniteOutput
+      ? Math.min(100, Math.max(0, Math.abs(rawOutput - 0.5) * 2 * 100))
+      : 0;
 
     // Per-sample binary cross-entropy loss
-    const p = Math.max(eps, Math.min(1 - eps, rawOutput));
-    const sampleLoss = -(label * Math.log(p) + (1 - label) * Math.log(1 - p));
+    const p = isFiniteOutput ? Math.max(eps, Math.min(1 - eps, rawOutput)) : 0.5;
+    const sampleLoss = -(targetVal * Math.log(p) + (1 - targetVal) * Math.log(1 - p));
 
     return {
       input,

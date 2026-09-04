@@ -13,7 +13,8 @@ import {
   CheckCircle,
   HelpCircle,
   Sparkles,
-  Sliders,
+  Layers,
+  TrendingDown,
 } from 'lucide-react';
 
 export function WeightInitSection() {
@@ -91,13 +92,27 @@ export function WeightInitSection() {
     return { allW, bins, total: allW.length };
   }, [currentNet]);
 
+  // Helper for heatmap cell style
+  const getHeatmapColor = (val) => {
+    if (val === 0) return { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' };
+    if (val > 0) {
+      if (val > 0.6) return { bg: 'bg-blue-200 text-blue-950 font-bold', border: 'border-blue-300' };
+      if (val > 0.2) return { bg: 'bg-blue-100 text-blue-900 font-semibold', border: 'border-blue-200' };
+      return { bg: 'bg-blue-50 text-blue-800', border: 'border-blue-100' };
+    } else {
+      if (val < -0.6) return { bg: 'bg-rose-200 text-rose-950 font-bold', border: 'border-rose-300' };
+      if (val < -0.2) return { bg: 'bg-rose-100 text-rose-900 font-semibold', border: 'border-rose-200' };
+      return { bg: 'bg-rose-50 text-rose-800', border: 'border-rose-100' };
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Title */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Badge variant="unit2">Unit II: Topic 2</Badge>
-          <span className="text-xs text-slate-500">Weight Initialization & Symmetry Breaking</span>
+          <span className="text-xs text-slate-500 font-medium">Weight Initialization & Symmetry Breaking</span>
         </div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight font-serif-heading">
           Weight Initialization Laboratory
@@ -116,19 +131,21 @@ export function WeightInitSection() {
             <button
               key={key}
               onClick={() => setSelectedStrategy(key)}
-              className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer ${
+              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer shadow-xs active:scale-[0.98] ${
                 isSelected
                   ? isZero
-                    ? 'bg-amber-50/70 border-amber-500 ring-1 ring-amber-500'
-                    : 'bg-blue-50/70 border-blue-600 ring-1 ring-blue-600'
-                  : 'bg-white border-slate-200 hover:border-slate-300'
+                    ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-600/20'
+                  : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/40'
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <span className="font-semibold text-xs text-slate-900">{item.label}</span>
+                <span className="font-semibold text-xs sm:text-sm text-slate-900 font-serif-heading">
+                  {item.label}
+                </span>
                 {isSelected && (
                   <span
-                    className={`w-2 h-2 rounded-full ${isZero ? 'bg-amber-500' : 'bg-blue-600'}`}
+                    className={`w-2.5 h-2.5 rounded-full ${isZero ? 'bg-amber-500' : 'bg-blue-600'}`}
                   ></span>
                 )}
               </div>
@@ -142,12 +159,12 @@ export function WeightInitSection() {
 
       {/* Symmetry Warning Alert if Zero Initialization is Selected */}
       {selectedStrategy === 'zeros' && (
-        <div className="p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3 text-xs text-amber-900">
+        <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-3.5 text-xs text-amber-950 shadow-xs">
           <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold block mb-1">The Symmetry Problem Demonstration:</span>
+          <div className="space-y-1">
+            <span className="font-bold text-sm block font-serif-heading">The Symmetry Problem Breakdown:</span>
             <p className="leading-relaxed">
-              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation (z = 0), and produces identical activations. During backpropagation, every hidden neuron receives the exact same gradient. Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
+              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation (z = 0), and produces identical activations. During backpropagation, every hidden neuron receives identical gradients ($\delta$). Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
             </p>
           </div>
         </div>
@@ -155,42 +172,43 @@ export function WeightInitSection() {
 
       {/* Main Interactive Comparison Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Parameter Matrices */}
+        {/* Left Column: Parameter Matrices & Heatmap */}
         <div className="space-y-4">
           <Card
-            title="Initial Weight Matrices (W)"
-            subtitle={`Strategy: ${strategyConfig.label}`}
+            title="Weight Matrices (W)"
+            subtitle={`Heatmap view · ${strategyConfig.label}`}
             action={
               <button
                 onClick={handleReset}
-                className="flex items-center gap-1 text-xs text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.98]"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Re-sample</span>
               </button>
             }
           >
-            <div className="space-y-4 text-xs font-mono">
+            <div className="space-y-4 text-xs">
               {/* Layer 1: Input (2) -> Hidden (3) */}
               <div>
-                <div className="text-slate-500 font-sans font-semibold mb-1 text-[11px] uppercase tracking-wider">
-                  W₁: Layer 1 Weights [3 x 2]
+                <div className="text-slate-500 font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
+                  W₁: Layer 1 Weights [3 hidden x 2 input]
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded border border-slate-200 space-y-1">
+                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-1.5">
                   {currentNet.weights[0].map((row, rIdx) => (
-                    <div key={rIdx} className="flex justify-between items-center py-0.5">
-                      <span className="text-slate-400 font-sans text-[10px]">h{rIdx + 1}:</span>
-                      <div className="flex gap-2">
-                        {row.map((w, cIdx) => (
-                          <span
-                            key={cIdx}
-                            className={`w-14 text-right font-medium ${
-                              w > 0 ? 'text-blue-700' : w < 0 ? 'text-red-600' : 'text-slate-500'
-                            }`}
-                          >
-                            {w.toFixed(4)}
-                          </span>
-                        ))}
+                    <div key={rIdx} className="flex items-center justify-between gap-2">
+                      <span className="text-slate-500 font-mono text-[10px] w-6">h{rIdx + 1}:</span>
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        {row.map((w, cIdx) => {
+                          const col = getHeatmapColor(w);
+                          return (
+                            <div
+                              key={cIdx}
+                              className={`py-1.5 px-2 rounded-lg border text-center font-mono text-xs transition-colors ${col.bg} ${col.border}`}
+                            >
+                              {w.toFixed(3)}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -199,24 +217,25 @@ export function WeightInitSection() {
 
               {/* Layer 2: Hidden (3) -> Output (1) */}
               <div>
-                <div className="text-slate-500 font-sans font-semibold mb-1 text-[11px] uppercase tracking-wider">
-                  W₂: Layer 2 Weights [1 x 3]
+                <div className="text-slate-500 font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
+                  W₂: Layer 2 Weights [1 output x 3 hidden]
                 </div>
-                <div className="bg-slate-50 p-2.5 rounded border border-slate-200 space-y-1">
+                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-1.5">
                   {currentNet.weights[1].map((row, rIdx) => (
-                    <div key={rIdx} className="flex justify-between items-center py-0.5">
-                      <span className="text-slate-400 font-sans text-[10px]">out:</span>
-                      <div className="flex gap-2">
-                        {row.map((w, cIdx) => (
-                          <span
-                            key={cIdx}
-                            className={`w-14 text-right font-medium ${
-                              w > 0 ? 'text-blue-700' : w < 0 ? 'text-red-600' : 'text-slate-500'
-                            }`}
-                          >
-                            {w.toFixed(4)}
-                          </span>
-                        ))}
+                    <div key={rIdx} className="flex items-center justify-between gap-2">
+                      <span className="text-slate-500 font-mono text-[10px] w-6">out:</span>
+                      <div className="flex-1 grid grid-cols-3 gap-1.5">
+                        {row.map((w, cIdx) => {
+                          const col = getHeatmapColor(w);
+                          return (
+                            <div
+                              key={cIdx}
+                              className={`py-1.5 px-1.5 rounded-lg border text-center font-mono text-xs transition-colors ${col.bg} ${col.border}`}
+                            >
+                              {w.toFixed(3)}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -224,23 +243,23 @@ export function WeightInitSection() {
               </div>
 
               {/* Weight Distribution Histogram */}
-              <div className="pt-2 border-t border-slate-200">
-                <div className="text-slate-500 font-sans font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
+              <div className="pt-3 border-t border-slate-200/80">
+                <div className="text-slate-500 font-semibold mb-2 text-[11px] uppercase tracking-wider">
                   Weight Spread Histogram ({weightDistribution.total} weights)
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   {weightDistribution.bins.map((bin, bIdx) => {
                     const pct = weightDistribution.total > 0 ? (bin.count / weightDistribution.total) * 100 : 0;
                     return (
-                      <div key={bIdx} className="flex items-center gap-2 text-[10px] font-sans">
-                        <span className="w-16 text-slate-500 text-right truncate font-mono">{bin.label}:</span>
-                        <div className="flex-1 bg-slate-100 h-2.5 rounded overflow-hidden">
+                      <div key={bIdx} className="flex items-center gap-2 text-[10px]">
+                        <span className="w-20 text-slate-500 text-right font-mono truncate">{bin.label}:</span>
+                        <div className="flex-1 bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
                           <div
-                            className="bg-blue-600 h-full rounded transition-all duration-300"
+                            className="bg-blue-600 h-full rounded-full transition-all duration-300"
                             style={{ width: `${pct}%` }}
                           ></div>
                         </div>
-                        <span className="w-6 text-slate-700 font-mono font-medium">{bin.count}</span>
+                        <span className="w-5 text-slate-700 font-mono font-semibold">{bin.count}</span>
                       </div>
                     );
                   })}
@@ -254,18 +273,18 @@ export function WeightInitSection() {
             title="Training Dynamics Test"
             subtitle="Train on XOR dataset to observe parameter changes"
           >
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div className="flex gap-2">
                 <button
                   onClick={() => handleTrainStep(50)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md text-xs font-semibold cursor-pointer transition-colors shadow-xs"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-all shadow-xs active:scale-[0.98]"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>Train +50 Epochs</span>
                 </button>
                 <button
                   onClick={handleReset}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium border border-slate-200 cursor-pointer transition-colors"
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium border border-slate-200 cursor-pointer transition-colors active:scale-[0.98]"
                 >
                   <span>Reset</span>
                 </button>
@@ -291,14 +310,14 @@ export function WeightInitSection() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Pre-Training Card */}
-              <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 shadow-xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-bold text-xs uppercase tracking-wider text-slate-700">
                     Before Training (Initial)
                   </span>
                   <Badge variant="default">Loss: {initialEval.avgLoss.toFixed(4)}</Badge>
                 </div>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-slate-500 mb-3 leading-relaxed">
                   Initial output distribution before backpropagation adjusts weights.
                 </p>
 
@@ -306,7 +325,7 @@ export function WeightInitSection() {
                   {initialEval.results.map((r, i) => (
                     <div
                       key={i}
-                      className="flex justify-between items-center p-2 bg-white rounded border border-slate-200"
+                      className="flex justify-between items-center p-2.5 bg-white rounded-lg border border-slate-200/90 shadow-2xs"
                     >
                       <span className="text-slate-600">[{r.input.join(', ')}] → y={r.label}</span>
                       <span className="font-bold text-blue-900">ŷ = {r.rawOutput.toFixed(4)}</span>
@@ -316,7 +335,7 @@ export function WeightInitSection() {
               </div>
 
               {/* Current Post-Training Card */}
-              <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-blue-50/40 rounded-xl border border-blue-200/80 shadow-xs">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-bold text-xs uppercase tracking-wider text-blue-900">
                     After {epochsTrained} Epochs
@@ -325,7 +344,7 @@ export function WeightInitSection() {
                     Loss: {currentEval.avgLoss.toFixed(4)}
                   </Badge>
                 </div>
-                <p className="text-xs text-blue-950 mb-3">
+                <p className="text-xs text-blue-950 mb-3 leading-relaxed">
                   Updated model predictions after gradient descent iterations.
                 </p>
 
@@ -333,19 +352,19 @@ export function WeightInitSection() {
                   {currentEval.results.map((r, i) => (
                     <div
                       key={i}
-                      className={`flex justify-between items-center p-2 rounded border ${
+                      className={`flex justify-between items-center p-2.5 rounded-lg border shadow-2xs ${
                         r.isCorrect
-                          ? 'bg-emerald-50/60 border-emerald-300'
-                          : 'bg-white border-slate-200'
+                          ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                          : 'bg-white border-slate-200 text-slate-700'
                       }`}
                     >
-                      <span className="text-slate-700">[{r.input.join(', ')}] → y={r.label}</span>
+                      <span>[{r.input.join(', ')}] → y={r.label}</span>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-blue-900">ŷ = {r.rawOutput.toFixed(4)}</span>
                         {r.isCorrect ? (
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
                         ) : (
-                          <span className="text-[10px] text-amber-600 font-sans font-medium">wrong</span>
+                          <span className="text-[10px] text-amber-600 font-sans font-semibold">wrong</span>
                         )}
                       </div>
                     </div>
@@ -357,22 +376,33 @@ export function WeightInitSection() {
 
           {/* Academic Comparative Analysis Card */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-white border border-slate-200 rounded-lg">
-              <span className="font-bold text-slate-900 block mb-1">Xavier / Glorot Strategy:</span>
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs">
+              <span className="font-bold text-slate-900 block mb-1 text-xs sm:text-sm font-serif-heading">
+                Xavier / Glorot Strategy:
+              </span>
               <p className="text-slate-600 leading-relaxed mb-2">
-                Designed by Xavier Glorot & Yoshua Bengio (2010). Samples from a uniform distribution scaled by <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-blue-800">±√(6 / (n_in + n_out))</code>.
+                Designed by Xavier Glorot & Yoshua Bengio (2010). Samples from a uniform distribution scaled by{' '}
+                <code className="font-mono bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-blue-900 text-[11px]">
+                  ±√(6 / (n_in + n_out))
+                </code>.
               </p>
-              <span className="text-[11px] font-medium text-blue-700 block">
+              <span className="text-[11px] font-semibold text-blue-700 block">
                 Best suited for: Sigmoid and Tanh activations.
               </span>
             </div>
 
-            <div className="p-4 bg-white border border-slate-200 rounded-lg">
-              <span className="font-bold text-slate-900 block mb-1">He / Kaiming Strategy:</span>
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs">
+              <span className="font-bold text-slate-900 block mb-1 text-xs sm:text-sm font-serif-heading">
+                He / Kaiming Strategy:
+              </span>
               <p className="text-slate-600 leading-relaxed mb-2">
-                Designed by Kaiming He et al. (2015). Scales variance by <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-blue-800">√(2 / n_in)</code> to account for the fact that ReLU zeroes out half the activations.
+                Designed by Kaiming He et al. (2015). Scales variance by{' '}
+                <code className="font-mono bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-900 text-[11px]">
+                  √(2 / n_in)
+                </code>{' '}
+                to account for the fact that ReLU zeroes out half the activations.
               </p>
-              <span className="text-[11px] font-medium text-emerald-700 block">
+              <span className="text-[11px] font-semibold text-emerald-700 block">
                 Best suited for: Deep ReLU networks.
               </span>
             </div>

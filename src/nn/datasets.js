@@ -66,21 +66,25 @@ function seededPRNG(seed = 42) {
  * @param {number} seed - Deterministic PRNG seed
  */
 export function generateCirclesData(points = 60, noise = 0.04, seed = 1337) {
+  if (points <= 0) return [];
   const rng = seededPRNG(seed);
   const data = [];
-  const half = Math.floor(points / 2);
+  const n0 = Math.ceil(points / 2);
+  const n1 = Math.floor(points / 2);
+  const classCounts = [n0, n1];
 
   for (let cls = 0; cls < 2; cls++) {
     const baseR = cls === 0 ? 0.08 : 0.38;
     const spanR = cls === 0 ? 0.14 : 0.08;
+    const count = classCounts[cls];
 
-    for (let i = 0; i < half; i++) {
+    for (let i = 0; i < count; i++) {
       const angle = rng() * 2 * Math.PI;
       const r = baseR + rng() * spanR;
       const jitterX = (rng() * 2 - 1) * noise;
       const jitterY = (rng() * 2 - 1) * noise;
-      const x = Math.max(0.05, Math.min(0.95, 0.5 + r * Math.cos(angle) + jitterX));
-      const y = Math.max(0.05, Math.min(0.95, 0.5 + r * Math.sin(angle) + jitterY));
+      const x = Math.max(0, Math.min(1, 0.5 + r * Math.cos(angle) + jitterX));
+      const y = Math.max(0, Math.min(1, 0.5 + r * Math.sin(angle) + jitterY));
       data.push({ input: [Number(x.toFixed(3)), Number(y.toFixed(3))], label: cls });
     }
   }

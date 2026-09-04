@@ -16,7 +16,7 @@ export const INIT_STRATEGIES = {
     label: 'Xavier / Glorot (Uniform)',
     description: 'Scale = sqrt(6 / (fan_in + fan_out)). Balances activation variance across layers. Ideal for Sigmoid and Tanh activations.',
     generate: (fanIn, fanOut) => {
-      const limit = Math.sqrt(6.0 / (fanIn + fanOut));
+      const limit = Math.sqrt(6.0 / Math.max(1, fanIn + fanOut));
       return (Math.random() * 2 - 1) * limit;
     },
   },
@@ -28,7 +28,7 @@ export const INIT_STRATEGIES = {
       const u1 = Math.max(1e-10, Math.random());
       const u2 = Math.random();
       const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-      const std = Math.sqrt(2.0 / fanIn);
+      const std = Math.sqrt(2.0 / Math.max(1, fanIn));
       return z0 * std;
     },
   },
@@ -51,7 +51,11 @@ export const INIT_STRATEGIES = {
  * @returns {{ weights: number[][][], biases: number[][] }}
  */
 export function initNetwork(layerSizes, strategy = 'xavier') {
-  const initConfig = INIT_STRATEGIES[strategy] || INIT_STRATEGIES.xavier;
+  const stratKey = typeof strategy === 'string' ? strategy.toLowerCase().trim() : 'xavier';
+  const initConfig = INIT_STRATEGIES[stratKey] || INIT_STRATEGIES.xavier;
+  if (!Array.isArray(layerSizes) || layerSizes.length < 2) {
+    return { weights: [], biases: [], strategy: stratKey };
+  }
   const weights = [];
   const biases = [];
 
@@ -70,7 +74,7 @@ export function initNetwork(layerSizes, strategy = 'xavier') {
     biases.push(b);
   }
 
-  return { weights, biases, strategy };
+  return { weights, biases, strategy: stratKey };
 }
 
 // -----------------------------------------------------------------------------
@@ -79,13 +83,14 @@ export function initNetwork(layerSizes, strategy = 'xavier') {
 // Computes post-activations: a[l] = activation(z[l])
 // -----------------------------------------------------------------------------
 export function getHiddenActivationType(hiddenActivationTypes, layerIdx = 0) {
+  let raw = 'relu';
   if (typeof hiddenActivationTypes === 'string') {
-    return hiddenActivationTypes;
+    raw = hiddenActivationTypes;
+  } else if (Array.isArray(hiddenActivationTypes) && hiddenActivationTypes.length > 0) {
+    raw = hiddenActivationTypes[layerIdx] ?? hiddenActivationTypes[hiddenActivationTypes.length - 1] ?? 'relu';
   }
-  if (Array.isArray(hiddenActivationTypes)) {
-    return hiddenActivationTypes[layerIdx] || hiddenActivationTypes[0] || 'relu';
-  }
-  return 'relu';
+  const key = typeof raw === 'string' ? raw.toLowerCase().trim() : 'relu';
+  return ACTIVATIONS[key] ? key : 'relu';
 }
 
 /**
@@ -123,8 +128,14 @@ export function forwardPass(
     });
 
     const isOutput = l === L - 1;
-    const activType = isOutput ? outputActivationType : getHiddenActivationType(hiddenActivationTypes, l);
-    const activationFn = (ACTIVATIONS[activType] || ACTIVATIONS.sigmoid).fn;
+    let activType;
+    if (isOutput) {
+      const outKey = typeof outputActivationType === 'string' ? outputActivationType.toLowerCase().trim() : 'sigmoid';
+      activType = ACTIVATIONS[outKey] ? outKey : 'sigmoid';
+    } else {
+      activType = getHiddenActivationType(hiddenActivationTypes, l);
+    }
+    const activationFn = (ACTIVATIONS[activType] || ACTIVATIONS.relu).fn;
 
     preActivations.push(z);
     activations.push(z.map(activationFn));
@@ -142,15 +153,18 @@ export function forwardPass(
  * Used for binary classification with sigmoid output.
  */
 export function computeLoss(predictions, targets) {
+  if (!predictions || !targets || predictions.length === 0) return 0;
   const eps = 1e-12; // Prevent log(0)
   let total = 0;
-  for (let i = 0; i < predictions.length; i++) {
+  const N = predictions.length;
+  for (let i = 0; i < N; i++) {
     const rawP = Array.isArray(predictions[i]) ? predictions[i][0] : predictions[i];
-    const p = Math.max(eps, Math.min(1 - eps, rawP));
+    const p = Number.isFinite(rawP) ? Math.max(eps, Math.min(1 - eps, rawP)) : 0.5;
     const rawY = Array.isArray(targets[i]) ? targets[i][0] : targets[i];
-    total -= rawY * Math.log(p) + (1 - rawY) * Math.log(1 - p);
+    const y = Number.isFinite(rawY) ? rawY : 0;
+    total -= y * Math.log(p) + (1 - y) * Math.log(1 - p);
   }
-  return total / predictions.length;
+  return total / N;
 }
 
 /**
@@ -158,14 +172,18 @@ export function computeLoss(predictions, targets) {
  * Fundamental educational loss function for regression and baseline perceptrons.
  */
 export function computeMSE(predictions, targets) {
+  if (!predictions || !targets || predictions.length === 0) return 0;
   let total = 0;
-  for (let i = 0; i < predictions.length; i++) {
-    const p = Array.isArray(predictions[i]) ? predictions[i][0] : predictions[i];
-    const y = Array.isArray(targets[i]) ? targets[i][0] : targets[i];
+  const N = predictions.length;
+  for (let i = 0; i < N; i++) {
+    const rawP = Array.isArray(predictions[i]) ? predictions[i][0] : predictions[i];
+    const rawY = Array.isArray(targets[i]) ? targets[i][0] : targets[i];
+    const p = Number.isFinite(rawP) ? rawP : 0;
+    const y = Number.isFinite(rawY) ? rawY : 0;
     const diff = p - y;
     total += diff * diff;
   }
-  return total / (2 * predictions.length);
+  return total / (2 * N);
 }
 
 // -----------------------------------------------------------------------------
@@ -251,14 +269,15 @@ export function computeDecisionBoundary(
   hiddenActivationTypes = ['relu'],
   gridSize = 40
 ) {
+  if (!weights || weights.length === 0 || gridSize <= 0) return [];
   const L = weights.length;
   const grid = [];
 
   for (let row = 0; row < gridSize; row++) {
     const gridRow = [];
     for (let col = 0; col < gridSize; col++) {
-      const x1 = col / (gridSize - 1);
-      const x2 = 1 - row / (gridSize - 1); // Flip row so row=0 is top (x2 = 1)
+      const x1 = gridSize === 1 ? 0.5 : col / (gridSize - 1);
+      const x2 = gridSize === 1 ? 0.5 : 1 - row / (gridSize - 1); // Flip row so row=0 is top (x2 = 1)
       const { activations } = forwardPass([x1, x2], weights, biases, hiddenActivationTypes);
       gridRow.push(activations[L][0]);
     }

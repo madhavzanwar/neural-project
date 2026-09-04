@@ -57,4 +57,24 @@ describe('Training Loop & Evaluation (Syllabus Unit II)', () => {
       expect(r).toHaveProperty('sampleLoss');
     }
   });
+
+  it('handles empty datasets safely without division by zero or NaN propagation', () => {
+    const net = initNetwork([2, 3, 1], 'xavier');
+    const trainRes = trainOneEpoch(net.weights, net.biases, ['relu'], 0.1, []);
+    expect(trainRes.loss).toBe(0);
+    expect(trainRes.accuracy).toBe(0);
+    expect(trainRes.weights).toEqual(net.weights);
+
+    const evalRes = evaluateDataset(net.weights, net.biases, ['relu'], []);
+    expect(evalRes.accuracy).toBe(0);
+    expect(evalRes.avgLoss).toBe(0);
+    expect(evalRes.totalCount).toBe(0);
+  });
+
+  it('supports string activation types and multi-layer networks in training', () => {
+    const net = initNetwork([2, 3, 3, 1], 'xavier');
+    const res = trainOneEpoch(net.weights, net.biases, 'tanh', 0.2, XOR_DATA);
+    expect(Number.isFinite(res.loss)).toBe(true);
+    expect(Number.isFinite(res.accuracy)).toBe(true);
+  });
 });

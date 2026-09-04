@@ -41,13 +41,53 @@ export function runGradientCheck(
   j = 0,
   k = 0,
   epsilon = 1e-4,
-  dataset = XOR_DATA
+  dataset = XOR_DATA,
+  checkBias = false
 ) {
+  if (!dataset || dataset.length === 0) {
+    return {
+      analyticalGrad: 0,
+      numericalGrad: 0,
+      absError: 0,
+      relError: 0,
+      passed: false,
+      epsilon,
+      currentWeight: 0,
+      error: 'Empty dataset',
+    };
+  }
+
   const N = dataset.length;
   const L = weights.length;
 
+  if (l < 0 || l >= L) {
+    return {
+      analyticalGrad: 0,
+      numericalGrad: 0,
+      absError: 0,
+      relError: 0,
+      passed: false,
+      epsilon,
+      currentWeight: 0,
+      error: `Layer index l=${l} out of bounds [0, ${L - 1}]`,
+    };
+  }
+
+  if (epsilon <= 0) {
+    return {
+      analyticalGrad: 0,
+      numericalGrad: 0,
+      absError: 0,
+      relError: 0,
+      passed: false,
+      epsilon,
+      currentWeight: 0,
+      error: 'Epsilon must be positive',
+    };
+  }
+
   // 1. Analytical gradient via backpropagation (averaged across dataset)
-  let totalDW = 0;
+  let totalGrad = 0;
   for (const { input, label } of dataset) {
     const { activations, preActivations } = forwardPass(
       input,
@@ -56,33 +96,40 @@ export function runGradientCheck(
       hiddenActivationTypes,
       'sigmoid'
     );
-    const { dWeights } = backprop(
-      [label],
+    const { dWeights, dBiases } = backprop(
+      Array.isArray(label) ? label : [label],
       activations,
       preActivations,
       weights,
       hiddenActivationTypes
     );
-    totalDW += dWeights[l][j][k];
+    totalGrad += checkBias ? dBiases[l][j] : dWeights[l][j][k];
   }
-  const analyticalGrad = totalDW / N;
+  const analyticalGrad = totalGrad / N;
 
   // 2. Numerical gradient via centered finite difference
-  const perturb = (sign) =>
+  const perturbWeights = (sign) =>
     weights.map((layer, li) =>
       layer.map((row, ji) =>
         row.map((w, ki) =>
-          li === l && ji === j && ki === k ? w + sign * epsilon : w
+          !checkBias && li === l && ji === j && ki === k ? w + sign * epsilon : w
         )
       )
     );
 
-  const evalLoss = (perturbedWeights) => {
+  const perturbBiases = (sign) =>
+    biases.map((bLayer, li) =>
+      bLayer.map((b, ji) =>
+        checkBias && li === l && ji === j ? b + sign * epsilon : b
+      )
+    );
+
+  const evalLoss = (perturbedWeights, perturbedBiases) => {
     const predictions = dataset.map(({ input }) => {
       const { activations } = forwardPass(
         input,
         perturbedWeights,
-        biases,
+        perturbedBiases,
         hiddenActivationTypes,
         'sigmoid'
       );
@@ -91,15 +138,15 @@ export function runGradientCheck(
     return computeLoss(predictions, dataset.map((d) => d.label));
   };
 
-  const lossPlus = evalLoss(perturb(+1));
-  const lossMinus = evalLoss(perturb(-1));
+  const lossPlus = evalLoss(perturbWeights(+1), perturbBiases(+1));
+  const lossMinus = evalLoss(perturbWeights(-1), perturbBiases(-1));
   const numericalGrad = (lossPlus - lossMinus) / (2 * epsilon);
 
   const absError = Math.abs(analyticalGrad - numericalGrad);
-  const relError =
-    absError / Math.max(Math.abs(analyticalGrad) + Math.abs(numericalGrad), 1e-10);
+  const denom = Math.max(Math.abs(analyticalGrad) + Math.abs(numericalGrad), 1e-10);
+  const relError = absError / denom;
 
-  // Gradient check passes if relative error is within standard tolerance 1e-3
+  // Gradient check passes if relative error is within standard tolerance 1e-3 or absolute error is tiny
   const passed = relError < 1e-3 || absError < 1e-5;
 
   return {
@@ -109,6 +156,6 @@ export function runGradientCheck(
     relError,
     passed,
     epsilon,
-    currentWeight: weights[l][j][k],
+    currentWeight: checkBias ? biases[l][j] : weights[l][j][k],
   };
 }

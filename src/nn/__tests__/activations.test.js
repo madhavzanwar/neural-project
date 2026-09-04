@@ -108,5 +108,33 @@ describe('Activation Functions (Syllabus Unit I)', () => {
       expect(mid.y).toBeCloseTo(0.5, 4);
       expect(mid.tangent).toBeCloseTo(0.5, 4);
     });
+
+    it('handles numPoints = 1 safely without division by zero', () => {
+      const curve = computeActivationCurve('sigmoid', -2, 2, 1);
+      expect(curve).toHaveLength(1);
+      expect(Number.isFinite(curve[0].x)).toBe(true);
+      expect(Number.isFinite(curve[0].y)).toBe(true);
+      expect(Number.isFinite(curve[0].derivative)).toBe(true);
+      expect(curve[0].x).toBe(0);
+      expect(curve[0].y).toBeCloseTo(0.5, 4);
+    });
+
+    it('handles numPoints <= 0 safely returning empty array', () => {
+      expect(computeActivationCurve('sigmoid', -2, 2, 0)).toEqual([]);
+      expect(computeActivationCurve('sigmoid', -2, 2, -5)).toEqual([]);
+    });
+
+    it('handles uppercase activation types cleanly', () => {
+      const curve = computeActivationCurve('Sigmoid', -2, 2, 5);
+      expect(curve).toHaveLength(5);
+      expect(curve[2].y).toBeCloseTo(0.5, 4);
+    });
+
+    it('handles undefined or null currentX gracefully', () => {
+      const curveNull = computeActivationCurve('tanh', -2, 2, 5, null);
+      expect(curveNull[0].tangent).toBeNull();
+      const curveUndef = computeActivationCurve('tanh', -2, 2, 5, undefined);
+      expect(curveUndef[0].tangent).toBeNull();
+    });
   });
 });

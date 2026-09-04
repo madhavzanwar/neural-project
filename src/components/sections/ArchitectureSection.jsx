@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
+import { Slider } from '../common/Slider.jsx';
 import { initNetwork } from '../../nn/network.js';
 import { Layers, Sliders, Info, CheckCircle2, RotateCcw } from 'lucide-react';
 
@@ -173,6 +174,53 @@ export function ArchitectureSection() {
           </button>
         }
       >
+        {/* Architectural Presets */}
+        <div className="mb-4 pb-4 border-b border-slate-100 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-1">
+            Quick Architecture Presets:
+          </span>
+          <button
+            onClick={() => { setNumHiddenLayers(1); setHidden1Size(1); setSelectedNeuron(null); }}
+            className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
+              numHiddenLayers === 1 && hidden1Size === 1
+                ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Single-Neuron Perceptron
+          </button>
+          <button
+            onClick={() => { setNumHiddenLayers(1); setHidden1Size(2); setSelectedNeuron(null); }}
+            className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
+              numHiddenLayers === 1 && hidden1Size === 2
+                ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            XOR Minimal (2 Hidden)
+          </button>
+          <button
+            onClick={() => { setNumHiddenLayers(1); setHidden1Size(4); setSelectedNeuron(null); }}
+            className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
+              numHiddenLayers === 1 && hidden1Size === 4
+                ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Standard Lab (4 Hidden)
+          </button>
+          <button
+            onClick={() => { setNumHiddenLayers(2); setHidden1Size(4); setHidden2Size(2); setSelectedNeuron(null); }}
+            className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
+              numHiddenLayers === 2 && hidden1Size === 4 && hidden2Size === 2
+                ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
+                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            Deep Classifier (4 → 2)
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
@@ -206,48 +254,30 @@ export function ArchitectureSection() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Hidden Layer 1 Neurons: {hidden1Size}
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="6"
+            <Slider
+              label="Hidden Layer 1 Neurons"
               value={hidden1Size}
-              onChange={(e) => setHidden1Size(Number(e.target.value))}
-              className="w-full accent-blue-600 cursor-pointer"
+              min={1}
+              max={6}
+              step={1}
+              valueDisplay={`${hidden1Size} nodes`}
+              ticks={['1', '2', '3', '4', '5', '6']}
+              onChange={(val) => setHidden1Size(val)}
             />
-            <div className="flex justify-between text-[11px] text-slate-400 font-mono mt-1">
-              <span>1</span>
-              <span>2</span>
-              <span>3</span>
-              <span>4</span>
-              <span>5</span>
-              <span>6</span>
-            </div>
           </div>
 
           {numHiddenLayers === 2 ? (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                Hidden Layer 2 Neurons: {hidden2Size}
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="6"
+              <Slider
+                label="Hidden Layer 2 Neurons"
                 value={hidden2Size}
-                onChange={(e) => setHidden2Size(Number(e.target.value))}
-                className="w-full accent-blue-600 cursor-pointer"
+                min={1}
+                max={6}
+                step={1}
+                valueDisplay={`${hidden2Size} nodes`}
+                ticks={['1', '2', '3', '4', '5', '6']}
+                onChange={(val) => setHidden2Size(val)}
               />
-              <div className="flex justify-between text-[11px] text-slate-400 font-mono mt-1">
-                <span>1</span>
-                <span>2</span>
-                <span>3</span>
-                <span>4</span>
-                <span>5</span>
-                <span>6</span>
-              </div>
             </div>
           ) : (
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-md flex items-center gap-2 text-xs text-slate-500">
@@ -328,8 +358,44 @@ export function ArchitectureSection() {
         <div className="overflow-x-auto">
           <svg
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            className="w-full max-w-4xl mx-auto h-auto bg-slate-50/50 rounded-lg border border-slate-200"
+            className="w-full max-w-4xl mx-auto h-auto bg-gradient-to-b from-slate-50/80 to-slate-100/40 rounded-xl border border-slate-200/90 shadow-2xs"
           >
+            <defs>
+              <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.1" floodColor="#0F172A" />
+              </filter>
+              <linearGradient id="excitatoryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#1D4ED8" stopOpacity="0.9" />
+              </linearGradient>
+              <linearGradient id="inhibitoryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#F87171" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#DC2626" stopOpacity="0.9" />
+              </linearGradient>
+            </defs>
+
+            {/* Column Swimlanes */}
+            {layerCoords.map((coords, lIdx) => {
+              const colX = coords[0].x;
+              const colWidth = 96;
+              const isColActive = selectedNeuron?.layerIdx === lIdx;
+              return (
+                <rect
+                  key={`layer-col-${lIdx}`}
+                  x={colX - colWidth / 2}
+                  y={12}
+                  width={colWidth}
+                  height={svgHeight - 24}
+                  rx={12}
+                  fill={isColActive ? 'rgba(219, 234, 254, 0.4)' : 'rgba(241, 245, 249, 0.5)'}
+                  stroke={isColActive ? '#93C5FD' : '#E2E8F0'}
+                  strokeWidth={isColActive ? 1.5 : 1}
+                  strokeDasharray={isColActive ? 'none' : '4 4'}
+                  className="transition-colors duration-200"
+                />
+              );
+            })}
+
             {/* Background Grid Lines & Layer Header Indicators */}
             {layerCoords.map((coords, lIdx) => (
               <g key={`layer-header-${lIdx}`}>
@@ -434,6 +500,7 @@ export function ArchitectureSection() {
                     key={`neuron-${lIdx}-${nIdx}`}
                     onClick={() => setSelectedNeuron({ layerIdx: lIdx, neuronIdx: nIdx })}
                     className="cursor-pointer group"
+                    style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                   >
                     {/* Pulsing ring if selected */}
                     {isSelected && (

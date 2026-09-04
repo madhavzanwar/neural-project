@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Metric } from '../common/Metric.jsx';
+import { Slider } from '../common/Slider.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
 import { DATASETS } from '../../nn/datasets.js';
 import { initNetwork, computeDecisionBoundary } from '../../nn/network.js';
@@ -21,13 +22,34 @@ import {
   RotateCcw,
   StepForward,
   Activity,
-  Layers,
-  Sliders,
+  Flame,
   CheckCircle2,
   XCircle,
-  HelpCircle,
-  Flame,
+  Sliders,
+  TrendingDown,
 } from 'lucide-react';
+
+const CustomLossTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-md rounded-xl p-3 text-xs min-w-[160px]">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-1.5">
+        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+          Training Epoch
+        </span>
+        <span className="font-mono font-bold text-blue-900 bg-blue-50 px-1.5 py-0.5 rounded text-[11px]">
+          Epoch {label}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-slate-600 font-medium">BCE Loss</span>
+        <span className="font-mono font-bold text-slate-900">
+          {Number(payload[0].value).toFixed(5)}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export function TrainingSection() {
   // Configuration state
@@ -99,7 +121,6 @@ export function TrainingSection() {
 
     setLossHistory((prev) => {
       const next = [...prev, { epoch: newEpoch, loss: Number(lastLoss.toFixed(5)) }];
-      // Cap history to last 150 points for smooth charting
       return next.length > 150 ? next.slice(-150) : next;
     });
   };
@@ -115,7 +136,6 @@ export function TrainingSection() {
     const loop = () => {
       if (!isTrainingRef.current) return;
 
-      // Run 5 epochs per animation frame for responsive training speed
       let lastLoss = 0;
       for (let i = 0; i < 5; i++) {
         const step = trainOneEpoch(localW, localB, [activationType], learningRate, currentDataset);
@@ -153,56 +173,113 @@ export function TrainingSection() {
     };
   }, [isTraining, learningRate, activationType, currentDataset]);
 
-  // Draw Decision Boundary on 2D Canvas
+  // Draw Decision Boundary on 2D Canvas with retina scaling & diverging color map
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
 
-    const gridSize = 32;
+    const displaySize = 280;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = displaySize * dpr;
+    canvas.height = displaySize * dpr;
+    canvas.style.width = `${displaySize}px`;
+    canvas.style.height = `${displaySize}px`;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    const gridSize = 35;
     const grid = computeDecisionBoundary(network.weights, network.biases, [activationType], gridSize);
 
-    const cellW = width / gridSize;
-    const cellH = height / gridSize;
+    const cellW = displaySize / gridSize;
+    const cellH = displaySize / gridSize;
 
-    // Draw grid pixels
+    // Draw diverging grid cells
     for (let r = 0; r < gridSize; r++) {
       for (let c = 0; c < gridSize; c++) {
         const prob = grid[r][c]; // 0.0 to 1.0
-        // Interpolate between light red (Class 0) and light blue (Class 1)
-        const red = Math.round(240 * (1 - prob) + 219 * prob);
-        const green = Math.round(230 * (1 - prob) + 234 * prob);
-        const blue = Math.round(230 * (1 - prob) + 254 * prob);
+
+        // Diverging colormap:
+        // prob < 0.5: Coral/Rose (#F43F5E) -> White (#FFFFFF)
+        // prob >= 0.5: White (#FFFFFF) -> Royal Blue (#3B82F6)
+        let red, green, blue;
+        if (prob < 0.5) {
+          const t = prob * 2; // 0 to 1
+          red = Math.round(244 + (255 - 244) * t);
+          green = Math.round(63 + (255 - 63) * t);
+          blue = Math.round(94 + (255 - 94) * t);
+        } else {
+          const t = (prob - 0.5) * 2; // 0 to 1
+          red = Math.round(255 + (59 - 255) * t);
+          green = Math.round(255 + (130 - 255) * t);
+          blue = Math.round(255 + (246 - 255) * t);
+        }
 
         ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
-        ctx.fillRect(c * cellW, r * cellH, cellW + 1, cellH + 1);
+        ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
       }
     }
 
-    // Draw decision contour threshold line (0.5)
-    // Draw data points on top
+    // Draw decision contour (where probability crosses 0.5)
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+
+    for (let r = 0; r < gridSize - 1; r++) {
+      for (let c = 0; c < gridSize - 1; c++) {
+        const p1 = grid[r][c];
+        const p2 = grid[r][c + 1];
+        const p3 = grid[r + 1][c];
+        if ((p1 < 0.5 && p2 >= 0.5) || (p1 >= 0.5 && p2 < 0.5)) {
+          ctx.beginPath();
+          ctx.moveTo((c + 0.5) * cellW, r * cellH);
+          ctx.lineTo((c + 0.5) * cellW, (r + 1) * cellH);
+          ctx.stroke();
+        }
+        if ((p1 < 0.5 && p3 >= 0.5) || (p1 >= 0.5 && p3 < 0.5)) {
+          ctx.beginPath();
+          ctx.moveTo(c * cellW, (r + 0.5) * cellH);
+          ctx.lineTo((c + 1) * cellW, (r + 0.5) * cellH);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.setLineDash([]); // Reset dash
+
+    // Draw training sample points
     for (const pt of currentDataset) {
       const [x1, x2] = pt.input;
-      const px = x1 * width;
-      const py = (1 - x2) * height; // Invert y-axis to match Cartesian convention
+      const px = x1 * displaySize;
+      const py = (1 - x2) * displaySize; // Invert y-axis for Cartesian convention
 
+      // Subtle shadow
+      ctx.beginPath();
+      ctx.arc(px, py + 1.5, 7.5, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.2)';
+      ctx.fill();
+
+      // Outer white ring
+      ctx.beginPath();
+      ctx.arc(px, py, 7.5, 0, 2 * Math.PI);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+
+      // Colored core
       ctx.beginPath();
       ctx.arc(px, py, 6, 0, 2 * Math.PI);
-      ctx.fillStyle = pt.label === 1 ? '#1D4ED8' : '#DC2626';
+      ctx.fillStyle = pt.label === 1 ? '#2563EB' : '#E11D48';
       ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.stroke();
 
-      // Label inside point
+      // Label text
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 9px monospace';
+      ctx.font = 'bold 9px ui-monospace, SFMono-Regular, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(pt.label), px, py);
+      ctx.fillText(String(pt.label), px, py + 0.5);
     }
+
+    ctx.restore();
   }, [network, activationType, currentDataset]);
 
   return (
@@ -211,7 +288,7 @@ export function TrainingSection() {
       <div>
         <div className="flex items-center gap-2 mb-1">
           <Badge variant="unit2">Unit II: Topic 1, 3 & 4</Badge>
-          <span className="text-xs text-slate-500">Loss Functions, Optimization & Backpropagation</span>
+          <span className="text-xs text-slate-500 font-medium">Loss Functions, Optimization & Backpropagation</span>
         </div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight font-serif-heading">
           Training & Backpropagation Workbench
@@ -265,7 +342,7 @@ export function TrainingSection() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsTraining(!isTraining)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-md font-semibold text-xs cursor-pointer transition-colors shadow-xs ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs cursor-pointer transition-all shadow-xs active:scale-[0.98] ${
                 isTraining
                   ? 'bg-amber-600 hover:bg-amber-700 text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -278,7 +355,7 @@ export function TrainingSection() {
             <button
               disabled={isTraining}
               onClick={() => stepTraining(1)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors active:scale-[0.98]"
             >
               <StepForward className="w-3.5 h-3.5" />
               <span>+1 Epoch</span>
@@ -287,7 +364,7 @@ export function TrainingSection() {
             <button
               disabled={isTraining}
               onClick={() => stepTraining(10)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors active:scale-[0.98]"
             >
               <StepForward className="w-3.5 h-3.5" />
               <span>+10 Epochs</span>
@@ -295,7 +372,7 @@ export function TrainingSection() {
 
             <button
               onClick={resetNetwork}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer transition-colors active:scale-[0.98]"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset</span>
@@ -303,7 +380,7 @@ export function TrainingSection() {
           </div>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5 text-xs">
           {/* Dataset Selector */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1.5 uppercase tracking-wider text-[11px]">
@@ -312,63 +389,47 @@ export function TrainingSection() {
             <select
               value={selectedDatasetKey}
               onChange={(e) => setSelectedDatasetKey(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md font-medium text-slate-800 cursor-pointer"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600/20"
             >
               <option value="xor">XOR Problem (Non-linear)</option>
               <option value="and">AND Gate (Linearly Separable)</option>
               <option value="or">OR Gate (Linearly Separable)</option>
               <option value="circles">Concentric Circles (Radial)</option>
             </select>
-            <span className="text-[10px] text-slate-500 mt-1 block">
-              {datasetConfig.separable ? 'Solvable by single layer' : 'Requires hidden non-linear layer'}
+            <span className="text-[10px] text-slate-500 mt-1.5 block">
+              {datasetConfig.separable ? 'Linearly separable (single layer can solve)' : 'Non-linear (requires hidden layer)'}
             </span>
           </div>
 
           {/* Learning Rate Slider */}
           <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="font-semibold text-slate-700 uppercase tracking-wider text-[11px]">
-                Learning Rate (η):
-              </label>
-              <span className="font-mono font-bold text-blue-900">{learningRate.toFixed(2)}</span>
-            </div>
-            <input
-              type="range"
-              min="0.05"
-              max="1.0"
-              step="0.05"
+            <Slider
+              label="Learning Rate (η)"
               value={learningRate}
-              onChange={(e) => setLearningRate(parseFloat(e.target.value))}
-              className="w-full accent-blue-600 cursor-pointer"
+              min={0.05}
+              max={1.0}
+              step={0.05}
+              onChange={setLearningRate}
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
               <span>0.05 (Slow)</span>
-              <span>0.50</span>
               <span>1.00 (Fast)</span>
             </div>
           </div>
 
           {/* Hidden Neurons */}
           <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="font-semibold text-slate-700 uppercase tracking-wider text-[11px]">
-                Hidden Neurons:
-              </label>
-              <span className="font-mono font-bold text-blue-900">{hiddenSize}</span>
-            </div>
-            <input
-              type="range"
-              min="2"
-              max="6"
+            <Slider
+              label="Hidden Neurons"
               value={hiddenSize}
-              onChange={(e) => setHiddenSize(parseInt(e.target.value, 10))}
-              className="w-full accent-blue-600 cursor-pointer"
+              min={2}
+              max={6}
+              step={1}
+              onChange={setHiddenSize}
             />
             <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
               <span>2</span>
-              <span>3</span>
               <span>4</span>
-              <span>5</span>
               <span>6</span>
             </div>
           </div>
@@ -381,13 +442,13 @@ export function TrainingSection() {
             <select
               value={activationType}
               onChange={(e) => setActivationType(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md font-medium text-slate-800 cursor-pointer"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600/20"
             >
               <option value="relu">ReLU (Standard)</option>
               <option value="tanh">Tanh (Zero-centered)</option>
               <option value="sigmoid">Sigmoid</option>
             </select>
-            <span className="text-[10px] text-slate-500 mt-1 block">Output layer always uses Sigmoid</span>
+            <span className="text-[10px] text-slate-500 mt-1.5 block">Output layer always uses Sigmoid</span>
           </div>
         </div>
       </Card>
@@ -398,7 +459,7 @@ export function TrainingSection() {
         <Card
           title="Training Loss vs Epoch"
           subtitle="Real computed Binary Cross-Entropy loss curve over time"
-          badge={<Badge variant="unit2">Real Computed Data</Badge>}
+          badge={<Badge variant="unit2">Empirical Curve</Badge>}
         >
           <div className="h-64 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -414,63 +475,53 @@ export function TrainingSection() {
                   tick={{ fontSize: 11, fill: '#64748b' }}
                   label={{ value: 'Loss', angle: -90, position: 'insideLeft', fontSize: 11 }}
                 />
-                <Tooltip
-                  formatter={(val) => [Number(val).toFixed(5), 'BCE Loss']}
-                  labelFormatter={(lab) => `Epoch ${lab}`}
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                  }}
-                />
+                <Tooltip content={<CustomLossTooltip />} />
                 <Line
                   type="monotone"
                   dataKey="loss"
                   stroke="#2563EB"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   dot={false}
                   isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 text-center">
-            Notice how loss drops as backpropagation adjusts weights along the negative gradient.
+          <div className="mt-3 text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5">
+            <TrendingDown className="w-3.5 h-3.5 text-blue-600" />
+            <span>Loss drops as backpropagation steps weights along the negative gradient vector.</span>
           </div>
         </Card>
 
         {/* 2D Decision Boundary Map */}
         <Card
           title="Learned 2D Decision Boundary"
-          subtitle="Real-time forward pass grid over [0, 1]² domain"
-          badge={<Badge variant="primary">Classification Field</Badge>}
+          subtitle="Real-time forward pass classification field over [0, 1]²"
+          badge={<Badge variant="primary">Classification Space</Badge>}
         >
           <div className="flex flex-col items-center">
             <canvas
               ref={canvasRef}
-              width={260}
-              height={260}
-              className="rounded-lg border border-slate-300 shadow-xs"
+              className="rounded-xl border border-slate-300/90 shadow-xs"
             />
             <div className="flex items-center justify-center gap-6 mt-3 text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-red-600"></span>
-                <span>Class 0 Points</span>
+                <span className="w-3 h-3 rounded-full bg-rose-600"></span>
+                <span className="font-medium">Class 0 Points</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-blue-700"></span>
-                <span>Class 1 Points</span>
+                <span className="w-3 h-3 rounded-full bg-blue-600"></span>
+                <span className="font-medium">Class 1 Points</span>
               </span>
               <span className="text-[11px] text-slate-400 italic">
-                Shading represents output probability ŷ
+                Boundary: p = 0.5 contour line
               </span>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Predictions Table */}
+      {/* Predictions Table with Confidence Bar */}
       <Card
         title="Live Sample Predictions & Error Analysis"
         subtitle="Genuine per-sample outputs, target comparison, and sample BCE loss"
@@ -483,21 +534,31 @@ export function TrainingSection() {
                 <th className="py-2.5 px-3">Target (y)</th>
                 <th className="py-2.5 px-3">Model Output (ŷ)</th>
                 <th className="py-2.5 px-3">Predicted Class</th>
-                <th className="py-2.5 px-3">Confidence</th>
+                <th className="py-2.5 px-3">Confidence Meter</th>
                 <th className="py-2.5 px-3">Sample Loss</th>
                 <th className="py-2.5 px-3">Classification Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {currentEval.results.map((r, idx) => (
-                <tr key={idx} className={r.isCorrect ? 'bg-white' : 'bg-rose-50/40'}>
+                <tr key={idx} className={r.isCorrect ? 'bg-white hover:bg-slate-50/60' : 'bg-rose-50/40 hover:bg-rose-50/70'}>
                   <td className="py-2 px-3 font-mono font-medium text-slate-800">
                     [{r.input[0].toFixed(2)}, {r.input[1].toFixed(2)}]
                   </td>
                   <td className="py-2 px-3 font-mono font-bold text-slate-900">{r.label}</td>
                   <td className="py-2 px-3 font-mono text-blue-900 font-semibold">{r.rawOutput.toFixed(4)}</td>
                   <td className="py-2 px-3 font-mono">{r.predictedClass}</td>
-                  <td className="py-2 px-3 font-mono text-slate-600">{r.confidence.toFixed(1)}%</td>
+                  <td className="py-2 px-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${r.isCorrect ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                          style={{ width: `${r.confidence}%` }}
+                        />
+                      </div>
+                      <span className="font-mono text-[11px] text-slate-600">{r.confidence.toFixed(1)}%</span>
+                    </div>
+                  </td>
                   <td className="py-2 px-3 font-mono text-slate-600">{r.sampleLoss.toFixed(4)}</td>
                   <td className="py-2 px-3">
                     {r.isCorrect ? (
@@ -526,33 +587,33 @@ export function TrainingSection() {
         badge={<Badge variant="unit2">Algorithm Core</Badge>}
       >
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
             <span className="font-bold text-blue-900 block mb-1">1. Forward Pass</span>
-            <p className="text-slate-600">
+            <p className="text-slate-600 leading-relaxed">
               Compute z = W·a + b and activation a = f(z) for all layers to produce prediction ŷ.
             </p>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
             <span className="font-bold text-blue-900 block mb-1">2. Loss Calculation</span>
-            <p className="text-slate-600">
+            <p className="text-slate-600 leading-relaxed">
               Compute Binary Cross-Entropy: L = -[y·log(ŷ) + (1-y)·log(1-ŷ)] between prediction and target.
             </p>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
             <span className="font-bold text-blue-900 block mb-1">3. Output Error (δᴸ)</span>
-            <p className="text-slate-600">
+            <p className="text-slate-600 leading-relaxed">
               Compute output error signal: δᴸ = ŷ - y (simplification of BCE derivative with Sigmoid).
             </p>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
             <span className="font-bold text-blue-900 block mb-1">4. Hidden Errors (δˡ)</span>
-            <p className="text-slate-600">
+            <p className="text-slate-600 leading-relaxed">
               Propagate error backward: δˡ = (Wˡ⁺¹ᵀ · δˡ⁺¹) ⊙ f'(zˡ) using the calculus Chain Rule.
             </p>
           </div>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
             <span className="font-bold text-blue-900 block mb-1">5. Weight Update</span>
-            <p className="text-slate-600">
+            <p className="text-slate-600 leading-relaxed">
               Update weights along negative gradient: W ← W - η · (δ · aᵀ) using learning rate η.
             </p>
           </div>
