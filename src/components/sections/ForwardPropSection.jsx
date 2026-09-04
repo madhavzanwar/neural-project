@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Metric } from '../common/Metric.jsx';
@@ -105,7 +105,7 @@ export function ForwardPropSection() {
   ];
 
   // Auto-play interval timer
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % steps.length);

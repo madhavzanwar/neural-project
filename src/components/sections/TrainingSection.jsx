@@ -50,11 +50,17 @@ export function TrainingSection() {
   // Canvas ref for decision boundary drawing
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
+  const isTrainingRef = useRef(false);
+  isTrainingRef.current = isTraining;
 
   // Re-initialize network when dataset or architecture changes
   const resetNetwork = () => {
     setIsTraining(false);
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    isTrainingRef.current = false;
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
     const newNet = initNetwork([2, hiddenSize, 1], 'xavier');
     setNetwork(newNet);
     setEpoch(0);
@@ -105,9 +111,10 @@ export function TrainingSection() {
     let localW = network.weights;
     let localB = network.biases;
     let localEpoch = epoch;
-    let frameId;
 
     const loop = () => {
+      if (!isTrainingRef.current) return;
+
       // Run 5 epochs per animation frame for responsive training speed
       let lastLoss = 0;
       for (let i = 0; i < 5; i++) {
@@ -129,17 +136,20 @@ export function TrainingSection() {
       // Stop automatically if loss becomes very low (convergence)
       if (lastLoss < 0.005) {
         setIsTraining(false);
+        isTrainingRef.current = false;
         return;
       }
 
-      frameId = requestAnimationFrame(loop);
+      animationRef.current = requestAnimationFrame(loop);
     };
 
-    frameId = requestAnimationFrame(loop);
-    animationRef.current = frameId;
+    animationRef.current = requestAnimationFrame(loop);
 
     return () => {
-      if (frameId) cancelAnimationFrame(frameId);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
     };
   }, [isTraining, learningRate, activationType, currentDataset]);
 

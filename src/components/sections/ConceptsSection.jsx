@@ -128,6 +128,7 @@ export function ConceptsSection() {
           <div className="space-y-3">
             {/* 1. Introduction to Neural Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit1-1"
               title="1. Introduction to Neural Networks & History"
               tag="Implemented & Demonstrated"
@@ -145,6 +146,7 @@ export function ConceptsSection() {
 
             {/* 2 & 3. Biological vs Artificial Neurons */}
             <TopicItem
+              query={searchQuery}
               id="unit1-2"
               title="2 & 3. Biological Neurons vs. Artificial Neural Networks"
               tag="Demonstrated in Overview"
@@ -166,6 +168,7 @@ export function ConceptsSection() {
 
             {/* 4. Neural Network Architecture */}
             <TopicItem
+              query={searchQuery}
               id="unit1-4"
               title="4. Neural Network Architecture"
               tag="Interactive Lab in Architecture Tab"
@@ -186,6 +189,7 @@ export function ConceptsSection() {
 
             {/* 5. Bias */}
             <TopicItem
+              query={searchQuery}
               id="unit1-5"
               title="5. The Role of Bias in Artificial Neurons"
               tag="Interactive Control in Architecture & Forward"
@@ -203,6 +207,7 @@ export function ConceptsSection() {
 
             {/* 6. Activation Functions */}
             <TopicItem
+              query={searchQuery}
               id="unit1-6"
               title="6. Activation Functions (Sigmoid, ReLU, Tanh, Linear)"
               tag="Interactive Explorer in Activation Tab"
@@ -232,6 +237,7 @@ export function ConceptsSection() {
 
             {/* 7. Learning Methods */}
             <TopicItem
+              query={searchQuery}
               id="unit1-7"
               title="7. Learning Methods in Neural Networks"
               tag="Theory Reference"
@@ -248,6 +254,7 @@ export function ConceptsSection() {
 
             {/* 8. Learning Rules */}
             <TopicItem
+              query={searchQuery}
               id="unit1-8"
               title="8. Fundamental Learning Rules"
               tag="Core Syllabus Topic"
@@ -285,6 +292,7 @@ export function ConceptsSection() {
 
             {/* 9 & 10. Single-layer vs Multilayer Neural Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit1-9"
               title="9 & 10. Single-Layer vs. Multilayer Neural Networks"
               tag="Demonstrated on XOR vs AND in Workbench"
@@ -321,6 +329,7 @@ export function ConceptsSection() {
 
             {/* 11. Feed-forward Neural Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit1-11"
               title="11. Feed-Forward Neural Networks"
               tag="Interactive Walkthrough in Forward Tab"
@@ -335,6 +344,7 @@ export function ConceptsSection() {
 
             {/* 12. Recurrent Neural Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit1-12"
               title="12. Recurrent Neural Networks (RNNs)"
               tag="Theoretical Syllabus Topic"
@@ -383,6 +393,7 @@ export function ConceptsSection() {
           <div className="space-y-3">
             {/* 1. Loss Functions */}
             <TopicItem
+              query={searchQuery}
               id="unit2-1"
               title="1. Loss Functions in Neural Networks"
               tag="Implemented in Training Core"
@@ -415,6 +426,7 @@ export function ConceptsSection() {
 
             {/* 2. Weight Initialization */}
             <TopicItem
+              query={searchQuery}
               id="unit2-2"
               title="2. Weight Initialization"
               tag="Interactive Lab in Weight Init Tab"
@@ -434,6 +446,7 @@ export function ConceptsSection() {
 
             {/* 3. Optimization Algorithms */}
             <TopicItem
+              query={searchQuery}
               id="unit2-3"
               title="3. Optimization Algorithms"
               tag="Implemented in Training Loop"
@@ -461,6 +474,7 @@ export function ConceptsSection() {
 
             {/* 4. Backpropagation Algorithm */}
             <TopicItem
+              query={searchQuery}
               id="unit2-4"
               title="4. Backpropagation Algorithm & Chain Rule Derivation"
               tag="Demonstrated in Training & Forward Walkthrough"
@@ -490,6 +504,7 @@ export function ConceptsSection() {
 
             {/* 5. Associative Memory Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit2-5"
               title="5. Associative Memory Networks and Their Types"
               tag="Theoretical Syllabus Topic"
@@ -534,6 +549,7 @@ export function ConceptsSection() {
 
             {/* 6. Discrete-Time Hopfield Networks */}
             <TopicItem
+              query={searchQuery}
               id="unit2-6"
               title="6. Discrete-Time Hopfield Networks"
               tag="Theoretical Syllabus Topic"
@@ -712,7 +728,13 @@ export function ConceptsSection() {
   );
 }
 
-function TopicItem({ id, title, tag, isInteractive, expanded, onToggle, children }) {
+function TopicItem({ id, title, tag, isInteractive, expanded, onToggle, query = '', keywords = '', children }) {
+  const q = query.trim().toLowerCase();
+  const isMatch = !q || title.toLowerCase().includes(q) || tag.toLowerCase().includes(q) || keywords.toLowerCase().includes(q);
+  if (!isMatch) return null;
+
+  const isOpen = q ? true : expanded;
+
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all shadow-xs">
       <button
@@ -729,9 +751,9 @@ function TopicItem({ id, title, tag, isInteractive, expanded, onToggle, children
             {tag}
           </span>
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
       </button>
-      {expanded && <div className="p-4 pt-1 border-t border-slate-100">{children}</div>}
+      {isOpen && <div className="p-4 pt-1 border-t border-slate-100">{children}</div>}
     </div>
   );
 }

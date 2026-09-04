@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Metric } from '../common/Metric.jsx';
@@ -33,7 +33,7 @@ export function WeightInitSection() {
   const [currentNet, setCurrentNet] = useState(() => initialNet);
 
   // Sync currentNet when initialNet resets
-  useMemo(() => {
+  useEffect(() => {
     setCurrentNet(initialNet);
     setEpochsTrained(0);
   }, [initialNet]);

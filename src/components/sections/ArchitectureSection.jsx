@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
@@ -82,6 +82,12 @@ export function ArchitectureSection() {
   const selectedDetails = useMemo(() => {
     if (!selectedNeuron) return null;
     const { layerIdx, neuronIdx } = selectedNeuron;
+
+    // Safety guard against out-of-bounds indices when architecture changes
+    if (layerIdx >= layerSizes.length || neuronIdx >= layerSizes[layerIdx]) {
+      return null;
+    }
+
     const isInput = layerIdx === 0;
     const isOutput = layerIdx === layerSizes.length - 1;
     const layerType = isInput ? 'Input' : isOutput ? 'Output' : `Hidden ${layerIdx}`;
@@ -121,6 +127,18 @@ export function ArchitectureSection() {
       outgoingWeights,
     };
   }, [selectedNeuron, network, layerSizes]);
+
+  // Clear invalid selection when layers shrink
+  useEffect(() => {
+    if (selectedNeuron) {
+      if (
+        selectedNeuron.layerIdx >= layerSizes.length ||
+        selectedNeuron.neuronIdx >= layerSizes[selectedNeuron.layerIdx]
+      ) {
+        setSelectedNeuron(null);
+      }
+    }
+  }, [layerSizes, selectedNeuron]);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -533,8 +551,8 @@ export function ArchitectureSection() {
                   {selectedDetails.outgoingWeights.map(({ destIdx, weight }) => (
                     <div key={destIdx} className="flex justify-between">
                       <span className="text-slate-500">To next neuron #{destIdx + 1}:</span>
-                      <span className={weight >= 0 ? 'text-blue-700 font-medium' : 'text-red-600 font-medium'}>
-                        {weight >= 0 ? `+${weight.toFixed(4)}` : weight.toFixed(4)}
+                      <span className={(typeof weight === 'number' && weight >= 0) ? 'text-blue-700 font-medium' : 'text-red-600 font-medium'}>
+                        {typeof weight === 'number' ? (weight >= 0 ? `+${weight.toFixed(4)}` : weight.toFixed(4)) : '0.0000'}
                       </span>
                     </div>
                   ))}
