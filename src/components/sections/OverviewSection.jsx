@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
+import { MathView } from '../common/MathView.jsx';
 import {
   ArrowRight,
   Brain,
@@ -58,7 +59,7 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
     },
     {
       biological: 'Cell Body / Soma (Sums incoming electrical potentials)',
-      artificial: 'Weighted Sum + Bias (z = Σ wᵢxᵢ + b)',
+      artificial: 'Weighted Sum + Bias', math: 'z = \\sum_{i=1}^n w_i x_i + b',
       role: 'Combines inputs and shifts the baseline activation threshold',
     },
     {
@@ -68,7 +69,7 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
     },
     {
       biological: 'Axon & Synaptic Terminals (Transmits pulse to next neurons)',
-      artificial: 'Neuron Output (a = f(z))',
+      artificial: 'Neuron Output', math: 'a = f(z)',
       role: 'Transmits final output to downstream layer or final prediction',
     },
   ];
@@ -153,7 +154,9 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
                 Hidden Layer(s) (Layer 1)
               </div>
               <div className="text-sm font-semibold text-blue-950 font-serif-heading">Non-linear Transform</div>
-              <p className="text-xs text-blue-800/80 mt-1">z = Σ wᵢxᵢ + b, followed by a = f(z)</p>
+              <div className="mt-1 flex justify-center">
+                <MathView math="z = \sum w_i x_i + b, \; a = f(z)" inline className="text-xs text-blue-900 bg-white/80 px-2 py-0.5 rounded border border-blue-200" />
+              </div>
               <div className="flex justify-center gap-2 mt-3">
                 <span className="w-7 h-7 rounded-full bg-indigo-100 border border-indigo-300 flex items-center justify-center text-xs font-mono font-bold text-indigo-950 shadow-2xs">
                   h₁
@@ -278,7 +281,14 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
                 {neuronComparison.map((row, idx) => (
                   <tr key={idx} className={idx % 2 === 0 ? 'bg-white hover:bg-slate-50/50' : 'bg-slate-50/40 hover:bg-slate-50/70'}>
                     <td className="py-2.5 px-3.5 font-medium text-slate-800">{row.biological}</td>
-                    <td className="py-2.5 px-3.5 font-mono text-blue-900 font-semibold">{row.artificial}</td>
+                    <td className="py-2.5 px-3.5 text-blue-900 font-semibold">
+                      <span className="font-medium text-slate-800">{row.artificial}</span>
+                      {row.math && (
+                        <div className="mt-0.5">
+                          <MathView math={row.math} inline className="text-blue-900 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 text-[11px]" />
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3.5 text-slate-600 leading-relaxed">{row.role}</td>
                   </tr>
                 ))}

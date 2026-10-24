@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Formula } from '../common/Formula.jsx';
+import { MathView } from '../common/MathView.jsx';
 import { Metric } from '../common/Metric.jsx';
 import { Slider } from '../common/Slider.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
@@ -121,16 +122,16 @@ export function ActivationsSection() {
           >
             <div className="space-y-3 text-xs">
               <div>
-                <span className="text-slate-500 block font-medium mb-1">Mathematical Formula:</span>
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded font-mono font-semibold text-blue-900">
-                  {activeActivation.formula}
+                <span className="text-slate-500 block font-semibold uppercase tracking-wider text-[10px] mb-1">Mathematical Formula:</span>
+                <div className="p-3 bg-slate-50/90 border border-slate-200/90 rounded-xl shadow-2xs">
+                  <MathView math={activeActivation.latexFormula || activeActivation.formula} display={true} />
                 </div>
               </div>
 
               <div>
-                <span className="text-slate-500 block font-medium mb-1">First Derivative:</span>
-                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded font-mono text-slate-800">
-                  {activeActivation.derivativeFormula}
+                <span className="text-slate-500 block font-semibold uppercase tracking-wider text-[10px] mb-1">First Derivative:</span>
+                <div className="p-3 bg-slate-50/90 border border-slate-200/90 rounded-xl shadow-2xs">
+                  <MathView math={activeActivation.latexDerivative || activeActivation.derivativeFormula} display={true} />
                 </div>
               </div>
 

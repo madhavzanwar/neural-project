@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Metric } from '../common/Metric.jsx';
+import { MathView } from '../common/MathView.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
 import { initNetwork, INIT_STRATEGIES } from '../../nn/network.js';
 import { trainOneEpoch, evaluateDataset } from '../../nn/training.js';
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Layers,
   TrendingDown,
+  Edit3,
 } from 'lucide-react';
 
 export function WeightInitSection() {
@@ -30,7 +32,7 @@ export function WeightInitSection() {
     return initNetwork(layerSizes, selectedStrategy);
   }, [selectedStrategy, layerSizes, seed]);
 
-  // Current network state (mutated by training)
+  // Current network state (mutated by training or manual user edits)
   const [currentNet, setCurrentNet] = useState(() => initialNet);
 
   // Sync currentNet when initialNet resets
@@ -47,6 +49,24 @@ export function WeightInitSection() {
   const currentEval = useMemo(() => {
     return evaluateDataset(currentNet.weights, currentNet.biases, ['relu'], XOR_DATA);
   }, [currentNet]);
+
+  // Manual matrix cell editing handler
+  const handleEditMatrixWeight = (layerIdx, rowIdx, colIdx, rawVal) => {
+    const val = parseFloat(rawVal);
+    if (isNaN(val)) return;
+    setCurrentNet((prev) => {
+      const newW = prev.weights.map((l, l_i) =>
+        l_i === layerIdx
+          ? l.map((row, r_i) =>
+              r_i === rowIdx
+                ? row.map((w, c_i) => (c_i === colIdx ? val : w))
+                : [...row]
+            )
+          : [...l]
+      );
+      return { ...prev, weights: newW };
+    });
+  };
 
   // Train a batch of epochs
   const handleTrainStep = (steps = 50) => {
@@ -118,7 +138,7 @@ export function WeightInitSection() {
           Weight Initialization Laboratory
         </h2>
         <p className="text-slate-600 text-sm">
-          Explore how initial connection weights determine training dynamics, convergence speed, and prevent the symmetry problem.
+          Explore how initial connection weights determine training dynamics, convergence speed, and prevent the symmetry problem. You can choose standard strategies or <strong>directly edit matrix weights</strong> below.
         </p>
       </div>
 
@@ -164,7 +184,7 @@ export function WeightInitSection() {
           <div className="space-y-1">
             <span className="font-bold text-sm block font-serif-heading">The Symmetry Problem Breakdown:</span>
             <p className="leading-relaxed">
-              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation (z = 0), and produces identical activations. During backpropagation, every hidden neuron receives identical gradients ($\delta$). Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
+              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation ($z = 0$), and produces identical activations. During backpropagation, every hidden neuron receives identical gradients ($\delta$). Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
             </p>
           </div>
         </div>
@@ -172,11 +192,11 @@ export function WeightInitSection() {
 
       {/* Main Interactive Comparison Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Parameter Matrices & Heatmap */}
+        {/* Left Column: Parameter Matrices & Editable Heatmap */}
         <div className="space-y-4">
           <Card
             title="Weight Matrices (W)"
-            subtitle={`Heatmap view · ${strategyConfig.label}`}
+            subtitle="Editable heatmap: click any cell to edit weights directly"
             action={
               <button
                 onClick={handleReset}
@@ -190,10 +210,13 @@ export function WeightInitSection() {
             <div className="space-y-4 text-xs">
               {/* Layer 1: Input (2) -> Hidden (3) */}
               <div>
-                <div className="text-slate-500 font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
-                  W₁: Layer 1 Weights [3 hidden x 2 input]
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                    W₁: Layer 1 Weights [3 × 2]
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">Type to edit</span>
                 </div>
-                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-1.5">
+                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-2">
                   {currentNet.weights[0].map((row, rIdx) => (
                     <div key={rIdx} className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-mono text-[10px] w-6">h{rIdx + 1}:</span>
@@ -201,12 +224,15 @@ export function WeightInitSection() {
                         {row.map((w, cIdx) => {
                           const col = getHeatmapColor(w);
                           return (
-                            <div
+                            <input
                               key={cIdx}
-                              className={`py-1.5 px-2 rounded-lg border text-center font-mono text-xs transition-colors ${col.bg} ${col.border}`}
-                            >
-                              {w.toFixed(3)}
-                            </div>
+                              type="number"
+                              step="0.05"
+                              value={w}
+                              onChange={(e) => handleEditMatrixWeight(0, rIdx, cIdx, e.target.value)}
+                              className={`py-1.5 px-2 rounded-lg border text-center font-mono text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${col.bg} ${col.border}`}
+                              title={`Edit W1[${rIdx+1}, ${cIdx+1}]`}
+                            />
                           );
                         })}
                       </div>
@@ -217,10 +243,13 @@ export function WeightInitSection() {
 
               {/* Layer 2: Hidden (3) -> Output (1) */}
               <div>
-                <div className="text-slate-500 font-semibold mb-1.5 text-[11px] uppercase tracking-wider">
-                  W₂: Layer 2 Weights [1 output x 3 hidden]
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
+                    W₂: Layer 2 Weights [1 × 3]
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">Type to edit</span>
                 </div>
-                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-1.5">
+                <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-2">
                   {currentNet.weights[1].map((row, rIdx) => (
                     <div key={rIdx} className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-mono text-[10px] w-6">out:</span>
@@ -228,12 +257,15 @@ export function WeightInitSection() {
                         {row.map((w, cIdx) => {
                           const col = getHeatmapColor(w);
                           return (
-                            <div
+                            <input
                               key={cIdx}
-                              className={`py-1.5 px-1.5 rounded-lg border text-center font-mono text-xs transition-colors ${col.bg} ${col.border}`}
-                            >
-                              {w.toFixed(3)}
-                            </div>
+                              type="number"
+                              step="0.05"
+                              value={w}
+                              onChange={(e) => handleEditMatrixWeight(1, rIdx, cIdx, e.target.value)}
+                              className={`py-1.5 px-1.5 rounded-lg border text-center font-mono text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${col.bg} ${col.border}`}
+                              title={`Edit W2[${rIdx+1}, ${cIdx+1}]`}
+                            />
                           );
                         })}
                       </div>
@@ -374,35 +406,36 @@ export function WeightInitSection() {
             </div>
           </Card>
 
-          {/* Academic Comparative Analysis Card */}
+          {/* Academic Comparative Analysis Card with Textbook KaTeX */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs">
-              <span className="font-bold text-slate-900 block mb-1 text-xs sm:text-sm font-serif-heading">
-                Xavier / Glorot Strategy:
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs space-y-2">
+              <span className="font-bold text-slate-900 block text-xs sm:text-sm font-serif-heading">
+                Xavier / Glorot Strategy (2010):
               </span>
-              <p className="text-slate-600 leading-relaxed mb-2">
-                Designed by Xavier Glorot & Yoshua Bengio (2010). Samples from a uniform distribution scaled by{' '}
-                <code className="font-mono bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-blue-900 text-[11px]">
-                  ±√(6 / (n_in + n_out))
-                </code>.
+              <p className="text-slate-600 leading-relaxed">
+                Designed by Xavier Glorot & Yoshua Bengio. Maintains variance of activations and gradients across deep layers:
               </p>
-              <span className="text-[11px] font-semibold text-blue-700 block">
+              <MathView
+                math="W \sim \mathcal{U}\left(-\sqrt{\frac{6}{n_{\text{in}} + n_{\text{out}}}}, +\sqrt{\frac{6}{n_{\text{in}} + n_{\text{out}}}}\right)"
+                display={true}
+              />
+              <span className="text-[11px] font-semibold text-blue-700 block pt-1">
                 Best suited for: Sigmoid and Tanh activations.
               </span>
             </div>
 
-            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs">
-              <span className="font-bold text-slate-900 block mb-1 text-xs sm:text-sm font-serif-heading">
-                He / Kaiming Strategy:
+            <div className="p-4 bg-white border border-slate-200/90 rounded-xl shadow-xs space-y-2">
+              <span className="font-bold text-slate-900 block text-xs sm:text-sm font-serif-heading">
+                He / Kaiming Strategy (2015):
               </span>
-              <p className="text-slate-600 leading-relaxed mb-2">
-                Designed by Kaiming He et al. (2015). Scales variance by{' '}
-                <code className="font-mono bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-900 text-[11px]">
-                  √(2 / n_in)
-                </code>{' '}
-                to account for the fact that ReLU zeroes out half the activations.
+              <p className="text-slate-600 leading-relaxed">
+                Designed by Kaiming He et al. Accounts for ReLU zeroing out half of the pre-activations:
               </p>
-              <span className="text-[11px] font-semibold text-emerald-700 block">
+              <MathView
+                math="W \sim \mathcal{N}\left(0, \sqrt{\frac{2}{n_{\text{in}}}}\right)"
+                display={true}
+              />
+              <span className="text-[11px] font-semibold text-emerald-700 block pt-1">
                 Best suited for: Deep ReLU networks.
               </span>
             </div>

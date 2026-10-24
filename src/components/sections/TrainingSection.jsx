@@ -3,6 +3,7 @@ import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { Metric } from '../common/Metric.jsx';
 import { Slider } from '../common/Slider.jsx';
+import { MathView } from '../common/MathView.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
 import { DATASETS } from '../../nn/datasets.js';
 import { initNetwork, computeDecisionBoundary } from '../../nn/network.js';
@@ -27,6 +28,8 @@ import {
   XCircle,
   Sliders,
   TrendingDown,
+  Edit3,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 const CustomLossTooltip = ({ active, payload, label }) => {
@@ -57,6 +60,9 @@ export function TrainingSection() {
   const [hiddenSize, setHiddenSize] = useState(4);
   const [activationType, setActivationType] = useState('relu');
   const [learningRate, setLearningRate] = useState(0.3);
+
+  // Manual parameter tuning panel toggle
+  const [showManualTuning, setShowManualTuning] = useState(false);
 
   // Training execution state
   const [isTraining, setIsTraining] = useState(false);
@@ -100,6 +106,37 @@ export function TrainingSection() {
   const currentEval = useMemo(() => {
     return evaluateDataset(network.weights, network.biases, [activationType], currentDataset);
   }, [network, activationType, currentDataset]);
+
+  // Manual weight / bias update handlers
+  const handleUpdateWeight = (lIdx, rIdx, cIdx, val) => {
+    setIsTraining(false);
+    isTrainingRef.current = false;
+    setNetwork((prev) => {
+      const newW = prev.weights.map((layer, l_i) =>
+        l_i === lIdx
+          ? layer.map((row, r_i) =>
+              r_i === rIdx
+                ? row.map((w, c_i) => (c_i === cIdx ? Number(val) : w))
+                : [...row]
+            )
+          : [...layer]
+      );
+      return { ...prev, weights: newW };
+    });
+  };
+
+  const handleUpdateBias = (lIdx, nIdx, val) => {
+    setIsTraining(false);
+    isTrainingRef.current = false;
+    setNetwork((prev) => {
+      const newB = prev.biases.map((bLayer, l_i) =>
+        l_i === lIdx
+          ? bLayer.map((b, n_i) => (n_i === nIdx ? Number(val) : b))
+          : [...bLayer]
+      );
+      return { ...prev, biases: newB };
+    });
+  };
 
   // Train one step
   const stepTraining = (stepCount = 1) => {
@@ -294,7 +331,7 @@ export function TrainingSection() {
           Training & Backpropagation Workbench
         </h2>
         <p className="text-slate-600 text-sm">
-          Observe real mathematical backpropagation in action. The network computes genuine predictions, measures Binary Cross-Entropy loss, and propagates error gradients backward to adjust weights.
+          Observe real mathematical backpropagation in action. The network computes genuine predictions, measures Binary Cross-Entropy loss, and propagates error gradients backward to adjust weights. You can train with gradient descent or <strong>manually tune any weight slider</strong> to observe real-time decision boundary morphing.
         </p>
       </div>
 
@@ -339,7 +376,7 @@ export function TrainingSection() {
           )
         }
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsTraining(!isTraining)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs cursor-pointer transition-all shadow-xs active:scale-[0.98] ${
@@ -368,6 +405,18 @@ export function TrainingSection() {
             >
               <StepForward className="w-3.5 h-3.5" />
               <span>+10 Epochs</span>
+            </button>
+
+            <button
+              onClick={() => setShowManualTuning(!showManualTuning)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer active:scale-[0.98] ${
+                showManualTuning
+                  ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold shadow-2xs'
+                  : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+              <span>{showManualTuning ? 'Hide Weight Tuning' : 'Tune Weights Manually'}</span>
             </button>
 
             <button
@@ -451,6 +500,95 @@ export function TrainingSection() {
             <span className="text-[10px] text-slate-500 mt-1.5 block">Output layer always uses Sigmoid</span>
           </div>
         </div>
+
+        {/* Dynamic Manual Parameter Tuning Drawer */}
+        {showManualTuning && (
+          <div className="mt-5 pt-4 border-t border-slate-200 bg-slate-50/70 p-4 rounded-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-bold text-sm text-slate-900 font-serif-heading block">
+                  Manual Weight & Bias Tuning Panel
+                </span>
+                <span className="text-xs text-slate-500">
+                  Drag any slider below to manually perturb parameters and observe real-time decision boundary morphing.
+                </span>
+              </div>
+              <Badge variant="navy">Real-time Canvas Update</Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Layer 1 Weights & Biases */}
+              <div className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-3">
+                <span className="font-bold text-xs text-blue-900 block uppercase tracking-wider">
+                  Layer 1: Input (2) → Hidden ({hiddenSize})
+                </span>
+                <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+                  {network.weights[0].map((row, hIdx) => (
+                    <div key={hIdx} className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                      <span className="font-mono text-xs font-semibold text-slate-700 block">
+                        Neuron h_{hIdx + 1}:
+                      </span>
+                      <Slider
+                        label={`W₁[${hIdx + 1}, 1] (x₁ → h${hIdx + 1})`}
+                        value={row[0]}
+                        min={-3}
+                        max={3}
+                        step={0.05}
+                        onChange={(v) => handleUpdateWeight(0, hIdx, 0, v)}
+                      />
+                      <Slider
+                        label={`W₁[${hIdx + 1}, 2] (x₂ → h${hIdx + 1})`}
+                        value={row[1]}
+                        min={-3}
+                        max={3}
+                        step={0.05}
+                        onChange={(v) => handleUpdateWeight(0, hIdx, 1, v)}
+                      />
+                      <Slider
+                        label={`Bias b_h${hIdx + 1}`}
+                        value={network.biases[0][hIdx]}
+                        min={-2}
+                        max={2}
+                        step={0.05}
+                        onChange={(v) => handleUpdateBias(0, hIdx, v)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Layer 2 Weights & Output Bias */}
+              <div className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs space-y-3">
+                <span className="font-bold text-xs text-emerald-900 block uppercase tracking-wider">
+                  Layer 2: Hidden ({hiddenSize}) → Output ŷ
+                </span>
+                <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+                  {network.weights[1][0].map((w, hIdx) => (
+                    <Slider
+                      key={hIdx}
+                      label={`W_out[1, ${hIdx + 1}] (h${hIdx + 1} → ŷ)`}
+                      value={w}
+                      min={-3}
+                      max={3}
+                      step={0.05}
+                      onChange={(v) => handleUpdateWeight(1, 0, hIdx, v)}
+                    />
+                  ))}
+                  <div className="pt-2 border-t border-slate-100">
+                    <Slider
+                      label="Output Bias (b_out)"
+                      value={network.biases[1][0]}
+                      min={-2}
+                      max={2}
+                      step={0.05}
+                      onChange={(v) => handleUpdateBias(1, 0, v)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Visualizations: Real Loss Curve + 2D Decision Boundary */}
@@ -580,41 +718,78 @@ export function TrainingSection() {
         </div>
       </Card>
 
-      {/* Backpropagation Step-by-Step Mathematical Explanation */}
+      {/* Backpropagation Step-by-Step Mathematical Explanation (Textbook KaTeX) */}
       <Card
         title="The 5 Steps of the Backpropagation Algorithm"
         subtitle="Syllabus Unit II: 4. Backpropagation algorithm derivation summary"
         badge={<Badge variant="unit2">Algorithm Core</Badge>}
       >
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
-            <span className="font-bold text-blue-900 block mb-1">1. Forward Pass</span>
-            <p className="text-slate-600 leading-relaxed">
-              Compute z = W·a + b and activation a = f(z) for all layers to produce prediction ŷ.
+          {/* Step 1 */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
+            <span className="font-bold text-blue-900 block font-serif-heading">1. Forward Pass</span>
+            <MathView
+              math="\mathbf{z}^{(l)} = W^{(l)} \mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}"
+              display={true}
+            />
+            <MathView
+              math="\mathbf{a}^{(l)} = f(\mathbf{z}^{(l)})"
+              display={true}
+            />
+            <p className="text-[11px] text-slate-600 leading-snug pt-1">
+              Computes intermediate pre-activations and layer states up to final prediction $\hat{y}$.
             </p>
           </div>
-          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
-            <span className="font-bold text-blue-900 block mb-1">2. Loss Calculation</span>
-            <p className="text-slate-600 leading-relaxed">
-              Compute Binary Cross-Entropy: L = -[y·log(ŷ) + (1-y)·log(1-ŷ)] between prediction and target.
+
+          {/* Step 2 */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
+            <span className="font-bold text-blue-900 block font-serif-heading">2. Loss Calculation</span>
+            <MathView
+              math="\mathcal{L} = -\left[y \ln \hat{y} + (1-y)\ln(1-\hat{y})\right]"
+              display={true}
+            />
+            <p className="text-[11px] text-slate-600 leading-snug pt-1">
+              Computes Binary Cross-Entropy loss penalizing divergence from target label <MathView math="y \\in \\{0, 1\\}" inline />.
             </p>
           </div>
-          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
-            <span className="font-bold text-blue-900 block mb-1">3. Output Error (δᴸ)</span>
-            <p className="text-slate-600 leading-relaxed">
-              Compute output error signal: δᴸ = ŷ - y (simplification of BCE derivative with Sigmoid).
+
+          {/* Step 3 */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
+            <span className="font-bold text-blue-900 block font-serif-heading">3. Output Error Signal</span>
+            <MathView
+              math="\delta^L = \nabla_{\mathbf{z}^L} \mathcal{L} = \hat{\mathbf{y}} - \mathbf{y}"
+              display={true}
+            />
+            <p className="text-[11px] text-slate-600 leading-snug pt-1">
+              Analytical cancellation between Sigmoid derivative and Binary Cross-Entropy derivative.
             </p>
           </div>
-          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
-            <span className="font-bold text-blue-900 block mb-1">4. Hidden Errors (δˡ)</span>
-            <p className="text-slate-600 leading-relaxed">
-              Propagate error backward: δˡ = (Wˡ⁺¹ᵀ · δˡ⁺¹) ⊙ f'(zˡ) using the calculus Chain Rule.
+
+          {/* Step 4 */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
+            <span className="font-bold text-blue-900 block font-serif-heading">4. Hidden Errors</span>
+            <MathView
+              math="\delta^l = \left((W^{l+1})^T \delta^{l+1}\right) \odot f'(\mathbf{z}^l)"
+              display={true}
+            />
+            <p className="text-[11px] text-slate-600 leading-snug pt-1">
+              Applies calculus Chain Rule backward: transmits error proportionally across weights.
             </p>
           </div>
-          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl">
-            <span className="font-bold text-blue-900 block mb-1">5. Weight Update</span>
-            <p className="text-slate-600 leading-relaxed">
-              Update weights along negative gradient: W ← W - η · (δ · aᵀ) using learning rate η.
+
+          {/* Step 5 */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
+            <span className="font-bold text-blue-900 block font-serif-heading">5. Parameter Updates</span>
+            <MathView
+              math="W^{(l)} \leftarrow W^{(l)} - \eta \cdot (\delta^{(l)} (\mathbf{a}^{(l-1)})^T)"
+              display={true}
+            />
+            <MathView
+              math="\mathbf{b}^{(l)} \leftarrow \mathbf{b}^{(l)} - \eta \cdot \delta^{(l)}"
+              display={true}
+            />
+            <p className="text-[11px] text-slate-600 leading-snug pt-1">
+              Steps parameters in the direction of steepest descent scaled by learning rate $\eta$.
             </p>
           </div>
         </div>

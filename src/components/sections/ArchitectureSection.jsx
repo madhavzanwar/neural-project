@@ -3,8 +3,9 @@ import { Card } from '../common/Card.jsx';
 import { Badge } from '../common/Badge.jsx';
 import { ExplanationCard } from '../common/ExplanationCard.jsx';
 import { Slider } from '../common/Slider.jsx';
+import { MathView } from '../common/MathView.jsx';
 import { initNetwork } from '../../nn/network.js';
-import { Layers, Sliders, Info, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Layers, Sliders, Info, CheckCircle2, RotateCcw, Edit3 } from 'lucide-react';
 
 export function ArchitectureSection() {
   const [numHiddenLayers, setNumHiddenLayers] = useState(1);
@@ -21,10 +22,41 @@ export function ArchitectureSection() {
     return [2, hidden1Size, hidden2Size, 1];
   }, [numHiddenLayers, hidden1Size, hidden2Size]);
 
-  // Generate deterministic network weights & biases for the diagram
-  const network = useMemo(() => {
-    return initNetwork(layerSizes, 'xavier');
+  // Dynamic stateful network weights & biases for the diagram and user editing
+  const [network, setNetwork] = useState(() => initNetwork(layerSizes, 'xavier'));
+
+  useEffect(() => {
+    setNetwork(initNetwork(layerSizes, 'xavier'));
   }, [layerSizes, seed]);
+
+  // Handler to update incoming weight of selected neuron
+  const handleEditIncomingWeight = (upstreamIdx, newVal) => {
+    if (!selectedNeuron || selectedNeuron.layerIdx === 0) return;
+    const { layerIdx, neuronIdx } = selectedNeuron;
+    setNetwork((prev) => {
+      const newWeights = prev.weights.map((l, lIdx) => {
+        if (lIdx !== layerIdx - 1) return l;
+        return l.map((row, rIdx) => {
+          if (rIdx !== neuronIdx) return row;
+          return row.map((w, cIdx) => (cIdx === upstreamIdx ? Number(newVal) : w));
+        });
+      });
+      return { ...prev, weights: newWeights };
+    });
+  };
+
+  // Handler to update bias of selected neuron
+  const handleEditBias = (newVal) => {
+    if (!selectedNeuron || selectedNeuron.layerIdx === 0) return;
+    const { layerIdx, neuronIdx } = selectedNeuron;
+    setNetwork((prev) => {
+      const newBiases = prev.biases.map((bLayer, lIdx) => {
+        if (lIdx !== layerIdx - 1) return bLayer;
+        return bLayer.map((b, nIdx) => (nIdx === neuronIdx ? Number(newVal) : b));
+      });
+      return { ...prev, biases: newBiases };
+    });
+  };
 
   // Compute exact matrix dimensions and parameter count
   const parameterStats = useMemo(() => {
@@ -43,8 +75,8 @@ export function ArchitectureSection() {
         layerIdx: l,
         fromName: l === 0 ? 'Input' : 'Hidden ' + l,
         toName: l === layerSizes.length - 2 ? 'Output' : 'Hidden ' + (l + 1),
-        wShape: '[' + outNodes + ' x ' + inNodes + ']',
-        bShape: '[' + outNodes + ']',
+        wShape: `[${outNodes} \\times ${inNodes}]`,
+        bShape: `[${outNodes}]`,
         wCount,
         bCount,
         total: wCount + bCount,
@@ -100,7 +132,9 @@ export function ArchitectureSection() {
     // Incoming weights & bias exist if not input layer
     if (!isInput) {
       const W = network.weights[layerIdx - 1];
-      bias = network.biases[layerIdx - 1][neuronIdx];
+      if (network.biases && network.biases[layerIdx - 1]) {
+        bias = network.biases[layerIdx - 1][neuronIdx];
+      }
       if (W && W[neuronIdx]) {
         incomingWeights = W[neuronIdx];
       }
@@ -153,7 +187,7 @@ export function ArchitectureSection() {
           Feed-Forward Network Architecture
         </h2>
         <p className="text-slate-600 text-sm">
-          A feed-forward neural network processes signals strictly from left (input) to right (output) without cycles or feedback loops.
+          A feed-forward neural network processes signals strictly from left (input) to right (output) without cycles or feedback loops. Click any neuron to inspect and <strong>dynamically edit its incoming weights and bias</strong>.
         </p>
       </div>
 
@@ -164,13 +198,13 @@ export function ArchitectureSection() {
         action={
           <button
             onClick={() => {
-              setSeed(s => s + 1);
+              setSeed((s) => s + 1);
               setSelectedNeuron(null);
             }}
             className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md font-medium cursor-pointer transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Re-initialize Parameters</span>
+            <span>Reset / Re-initialize</span>
           </button>
         }
       >
@@ -180,7 +214,11 @@ export function ArchitectureSection() {
             Quick Architecture Presets:
           </span>
           <button
-            onClick={() => { setNumHiddenLayers(1); setHidden1Size(1); setSelectedNeuron(null); }}
+            onClick={() => {
+              setNumHiddenLayers(1);
+              setHidden1Size(1);
+              setSelectedNeuron(null);
+            }}
             className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
               numHiddenLayers === 1 && hidden1Size === 1
                 ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
@@ -190,7 +228,11 @@ export function ArchitectureSection() {
             Single-Neuron Perceptron
           </button>
           <button
-            onClick={() => { setNumHiddenLayers(1); setHidden1Size(2); setSelectedNeuron(null); }}
+            onClick={() => {
+              setNumHiddenLayers(1);
+              setHidden1Size(2);
+              setSelectedNeuron(null);
+            }}
             className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
               numHiddenLayers === 1 && hidden1Size === 2
                 ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
@@ -200,7 +242,11 @@ export function ArchitectureSection() {
             XOR Minimal (2 Hidden)
           </button>
           <button
-            onClick={() => { setNumHiddenLayers(1); setHidden1Size(4); setSelectedNeuron(null); }}
+            onClick={() => {
+              setNumHiddenLayers(1);
+              setHidden1Size(4);
+              setSelectedNeuron(null);
+            }}
             className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
               numHiddenLayers === 1 && hidden1Size === 4
                 ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
@@ -210,7 +256,12 @@ export function ArchitectureSection() {
             Standard Lab (4 Hidden)
           </button>
           <button
-            onClick={() => { setNumHiddenLayers(2); setHidden1Size(4); setHidden2Size(2); setSelectedNeuron(null); }}
+            onClick={() => {
+              setNumHiddenLayers(2);
+              setHidden1Size(4);
+              setHidden2Size(2);
+              setSelectedNeuron(null);
+            }}
             className={`px-2.5 py-1 text-xs rounded-lg border font-medium cursor-pointer transition-all active:scale-95 ${
               numHiddenLayers === 2 && hidden1Size === 4 && hidden2Size === 2
                 ? 'bg-blue-50 text-blue-900 border-blue-300 font-semibold'
@@ -221,38 +272,27 @@ export function ArchitectureSection() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Hidden Layers Count */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-              Hidden Layers: {numHiddenLayers}
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setNumHiddenLayers(1)}
-                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-md border cursor-pointer transition-all ${
-                  numHiddenLayers === 1
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                1 Layer (Shallow)
-              </button>
-              <button
-                onClick={() => setNumHiddenLayers(2)}
-                className={`flex-1 py-1.5 px-3 text-xs font-medium rounded-md border cursor-pointer transition-all ${
-                  numHiddenLayers === 2
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                2 Layers (Deep)
-              </button>
-            </div>
-            <p className="text-[11px] text-slate-500 mt-1.5">
-              Single-layer nets cannot solve XOR; 2+ layers enable hierarchical representation.
+            <Slider
+              label="Hidden Layers Count"
+              value={numHiddenLayers}
+              min={1}
+              max={2}
+              step={1}
+              ticks={['1 Layer', '2 Layers']}
+              onChange={(val) => {
+                setNumHiddenLayers(val);
+                setSelectedNeuron(null);
+              }}
+            />
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              {numHiddenLayers === 1 ? 'Shallow representation' : 'Deep hierarchical feature extractor'}
             </p>
           </div>
 
+          {/* Hidden Layer 1 Neurons */}
           <div>
             <Slider
               label="Hidden Layer 1 Neurons"
@@ -260,206 +300,144 @@ export function ArchitectureSection() {
               min={1}
               max={6}
               step={1}
-              valueDisplay={`${hidden1Size} nodes`}
               ticks={['1', '2', '3', '4', '5', '6']}
-              onChange={(val) => setHidden1Size(val)}
+              onChange={(val) => {
+                setHidden1Size(val);
+                setSelectedNeuron(null);
+              }}
             />
+            <p className="text-[11px] text-slate-400 mt-1.5">
+              Incoming weights: {2 * hidden1Size} + Biases: {hidden1Size}
+            </p>
           </div>
 
-          {numHiddenLayers === 2 ? (
-            <div>
-              <Slider
-                label="Hidden Layer 2 Neurons"
-                value={hidden2Size}
-                min={1}
-                max={6}
-                step={1}
-                valueDisplay={`${hidden2Size} nodes`}
-                ticks={['1', '2', '3', '4', '5', '6']}
-                onChange={(val) => setHidden2Size(val)}
-              />
-            </div>
-          ) : (
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-md flex items-center gap-2 text-xs text-slate-500">
-              <Info className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Select "2 Layers" above to configure a second hidden layer.</span>
-            </div>
-          )}
+          {/* Hidden Layer 2 Neurons (Conditional) */}
+          <div>
+            {numHiddenLayers === 2 ? (
+              <>
+                <Slider
+                  label="Hidden Layer 2 Neurons"
+                  value={hidden2Size}
+                  min={1}
+                  max={4}
+                  step={1}
+                  ticks={['1', '2', '3', '4']}
+                  onChange={(val) => {
+                    setHidden2Size(val);
+                    setSelectedNeuron(null);
+                  }}
+                />
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  Incoming weights: {hidden1Size * hidden2Size} + Biases: {hidden2Size}
+                </p>
+              </>
+            ) : (
+              <div className="h-full flex flex-col justify-center text-xs text-slate-400 bg-slate-50 p-3 rounded border border-dashed border-slate-200">
+                <span>Single hidden layer active.</span>
+                <span className="text-[10px] text-slate-400">Increase hidden layer count to 2 to configure layer 2.</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Global Parameter Stats Strip */}
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-4">
+            <span className="text-slate-500 font-medium">Architecture Vector:</span>
+            <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+              [{layerSizes.join(' → ')}]
+            </span>
+          </div>
+          <div className="flex items-center gap-4 font-mono">
+            <span className="text-slate-600">Total Weights: <strong className="text-slate-900">{parameterStats.totalWeights}</strong></span>
+            <span className="text-slate-600">Total Biases: <strong className="text-slate-900">{parameterStats.totalBiases}</strong></span>
+            <span className="text-slate-600">Total Parameters: <strong className="text-blue-900 font-bold">{parameterStats.totalParams}</strong></span>
+          </div>
         </div>
       </Card>
 
-      {/* Layer Matrix Dimensions & Trainable Parameter Audit */}
+      {/* 2D SVG Network Visualizer */}
       <Card
-        title="Layer Matrix Dimensions and Parameter Accounting"
-        subtitle="Mathematical tensor dimensions and total learnable parameters"
-        badge={<Badge variant="navy">{parameterStats.totalParams} Trainable Parameters</Badge>}
+        title="Interactive 2D Architecture Diagram"
+        subtitle="Click any neuron circle to inspect and dynamically modify its incoming weights and bias"
+        badge={<Badge variant="navy">{layerSizes.length} Layers Total</Badge>}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs mb-3">
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-            <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold block mb-1">
-              Synaptic Weights (W)
-            </span>
-            <div className="text-lg font-bold font-mono text-blue-900">{parameterStats.totalWeights}</div>
-            <span className="text-[11px] text-slate-500">Multiplicative connection parameters</span>
-          </div>
-
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-md">
-            <span className="text-slate-500 uppercase tracking-wider text-[10px] font-bold block mb-1">
-              Neuron Biases (b)
-            </span>
-            <div className="text-lg font-bold font-mono text-blue-900">{parameterStats.totalBiases}</div>
-            <span className="text-[11px] text-slate-500">Threshold shift parameters</span>
-          </div>
-
-          <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-md">
-            <span className="text-blue-800 uppercase tracking-wider text-[10px] font-bold block mb-1">
-              Total Trainable Parameters
-            </span>
-            <div className="text-lg font-bold font-mono text-blue-950">{parameterStats.totalParams}</div>
-            <span className="text-[11px] text-blue-700">Weights + Biases combined</span>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto border border-slate-200 rounded-md">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
-              <tr>
-                <th className="py-2 px-3">Connection Gap</th>
-                <th className="py-2 px-3">Weight Matrix Shape [Out x In]</th>
-                <th className="py-2 px-3">Bias Vector Shape</th>
-                <th className="py-2 px-3">Weights Count</th>
-                <th className="py-2 px-3">Biases Count</th>
-                <th className="py-2 px-3 font-bold">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 font-mono">
-              {parameterStats.layerStats.map((st) => (
-                <tr key={st.layerIdx} className="hover:bg-slate-50">
-                  <td className="py-1.5 px-3 font-sans font-medium text-slate-800">
-                    {st.fromName} → {st.toName}
-                  </td>
-                  <td className="py-1.5 px-3 text-blue-900 font-semibold">{st.wShape}</td>
-                  <td className="py-1.5 px-3 text-slate-700">{st.bShape}</td>
-                  <td className="py-1.5 px-3">{st.wCount}</td>
-                  <td className="py-1.5 px-3">{st.bCount}</td>
-                  <td className="py-1.5 px-3 font-bold text-slate-900">{st.total}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Interactive 2D Network Diagram */}
-      <Card
-        title="2D Feed-Forward Architecture Diagram"
-        subtitle="Click any neuron to inspect its weights, bias, and connections"
-      >
-        <div className="overflow-x-auto">
+        <div className="w-full overflow-x-auto bg-slate-50/60 rounded-xl border border-slate-200 p-2">
           <svg
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            className="w-full max-w-4xl mx-auto h-auto bg-gradient-to-b from-slate-50/80 to-slate-100/40 rounded-xl border border-slate-200/90 shadow-2xs"
+            className="w-full h-auto min-w-[580px] select-none"
           >
-            <defs>
-              <filter id="nodeShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.1" floodColor="#0F172A" />
-              </filter>
-              <linearGradient id="excitatoryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#1D4ED8" stopOpacity="0.9" />
-              </linearGradient>
-              <linearGradient id="inhibitoryGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#F87171" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#DC2626" stopOpacity="0.9" />
-              </linearGradient>
-            </defs>
-
-            {/* Column Swimlanes */}
-            {layerCoords.map((coords, lIdx) => {
-              const colX = coords[0].x;
-              const colWidth = 96;
-              const isColActive = selectedNeuron?.layerIdx === lIdx;
+            {/* Draw layer swimlanes */}
+            {layerNames.map((name, lIdx) => {
+              const xCenter = (svgWidth / (layerCount + 1)) * (lIdx + 1);
               return (
-                <rect
-                  key={`layer-col-${lIdx}`}
-                  x={colX - colWidth / 2}
-                  y={12}
-                  width={colWidth}
-                  height={svgHeight - 24}
-                  rx={12}
-                  fill={isColActive ? 'rgba(219, 234, 254, 0.4)' : 'rgba(241, 245, 249, 0.5)'}
-                  stroke={isColActive ? '#93C5FD' : '#E2E8F0'}
-                  strokeWidth={isColActive ? 1.5 : 1}
-                  strokeDasharray={isColActive ? 'none' : '4 4'}
-                  className="transition-colors duration-200"
-                />
+                <g key={`swimlane-${lIdx}`}>
+                  <rect
+                    x={xCenter - 48}
+                    y={15}
+                    width={96}
+                    height={svgHeight - 30}
+                    rx={8}
+                    fill="#FFFFFF"
+                    stroke="#E2E8F0"
+                    strokeDasharray="4 4"
+                  />
+                  <text
+                    x={xCenter}
+                    y={32}
+                    textAnchor="middle"
+                    className="text-[10px] font-sans font-bold fill-slate-400 uppercase tracking-wider"
+                  >
+                    {name}
+                  </text>
+                  <text
+                    x={xCenter}
+                    y={svgHeight - 20}
+                    textAnchor="middle"
+                    className="text-[10px] font-mono fill-slate-400"
+                  >
+                    {layerSizes[lIdx]} {layerSizes[lIdx] === 1 ? 'Node' : 'Nodes'}
+                  </text>
+                </g>
               );
             })}
 
-            {/* Background Grid Lines & Layer Header Indicators */}
-            {layerCoords.map((coords, lIdx) => (
-              <g key={`layer-header-${lIdx}`}>
-                <text
-                  x={coords[0].x}
-                  y={24}
-                  textAnchor="middle"
-                  className="text-xs font-bold fill-slate-700 font-sans tracking-tight"
-                >
-                  {layerNames[lIdx]}
-                </text>
-                <text
-                  x={coords[0].x}
-                  y={40}
-                  textAnchor="middle"
-                  className="text-[11px] fill-slate-400 font-mono"
-                >
-                  ({layerSizes[lIdx]} {layerSizes[lIdx] === 1 ? 'neuron' : 'neurons'})
-                </text>
-              </g>
-            ))}
-
-            {/* Synaptic Connections (Weights) */}
-            {layerCoords.map((currentLayer, lIdx) => {
-              if (lIdx === layerCount - 1) return null;
+            {/* Draw Synapses (Connections) */}
+            {layerCoords.slice(0, -1).map((currentLayer, lIdx) => {
               const nextLayer = layerCoords[lIdx + 1];
-              const W = network.weights[lIdx];
+              const weightsMatrix = network.weights[lIdx];
 
-              return currentLayer.flatMap((fromNode, fromIdx) =>
-                nextLayer.map((toNode, toIdx) => {
-                  const weight = W && W[toIdx] ? W[toIdx][fromIdx] : 0;
-                  const isPositive = weight >= 0;
-                  const absW = Math.abs(weight);
-
-                  // Connection highlight logic
+              return currentLayer.map((srcNode, srcIdx) =>
+                nextLayer.map((dstNode, dstIdx) => {
+                  const weight = weightsMatrix?.[dstIdx]?.[srcIdx] ?? 0;
                   const isHighlighted =
                     selectedNeuron &&
-                    ((selectedNeuron.layerIdx === lIdx && selectedNeuron.neuronIdx === fromIdx) ||
-                      (selectedNeuron.layerIdx === lIdx + 1 && selectedNeuron.neuronIdx === toIdx));
+                    ((selectedNeuron.layerIdx === lIdx && selectedNeuron.neuronIdx === srcIdx) ||
+                      (selectedNeuron.layerIdx === lIdx + 1 && selectedNeuron.neuronIdx === dstIdx));
 
-                  const isDimmed = selectedNeuron && !isHighlighted;
-
+                  const isPositive = weight >= 0;
                   const strokeColor = isHighlighted
                     ? isPositive
-                      ? '#2563EB' // vivid blue
-                      : '#DC2626' // vivid red
+                      ? '#2563EB'
+                      : '#DC2626'
                     : isPositive
-                    ? '#93C5FD' // soft blue
-                    : '#FCA5A5'; // soft red
+                    ? '#93C5FD'
+                    : '#FCA5A5';
 
                   const strokeWidth = isHighlighted
-                    ? Math.max(2, Math.min(6, absW * 3.5))
-                    : Math.max(1, Math.min(4, absW * 2));
+                    ? Math.max(2, Math.min(6, Math.abs(weight) * 3 + 1))
+                    : Math.max(1, Math.min(4, Math.abs(weight) * 2 + 0.5));
 
                   return (
                     <line
-                      key={`synapse-${lIdx}-${fromIdx}-${toIdx}`}
-                      x1={fromNode.x}
-                      y1={fromNode.y}
-                      x2={toNode.x}
-                      y2={toNode.y}
+                      key={`synapse-${lIdx}-${srcIdx}-${dstIdx}`}
+                      x1={srcNode.x}
+                      y1={srcNode.y}
+                      x2={dstNode.x}
+                      y2={dstNode.y}
                       stroke={strokeColor}
                       strokeWidth={strokeWidth}
-                      strokeOpacity={isDimmed ? 0.15 : 0.85}
+                      strokeOpacity={selectedNeuron && !isHighlighted ? 0.25 : 0.85}
                       className="transition-all duration-200"
                     />
                   );
@@ -467,33 +445,32 @@ export function ArchitectureSection() {
               );
             })}
 
-            {/* Neurons */}
+            {/* Draw Neurons (Circles) */}
             {layerCoords.map((layer, lIdx) =>
               layer.map((node, nIdx) => {
-                const isInput = lIdx === 0;
-                const isOutput = lIdx === layerCount - 1;
                 const isSelected =
                   selectedNeuron &&
                   selectedNeuron.layerIdx === lIdx &&
                   selectedNeuron.neuronIdx === nIdx;
 
-                // Color node by layer type
-                let fillColor = isInput
-                  ? '#E2E8F0' // slate
-                  : isOutput
-                  ? '#D1FAE5' // emerald
-                  : '#DBEAFE'; // blue
+                const isInput = lIdx === 0;
+                const isOutput = lIdx === layerCount - 1;
 
-                let strokeColor = isInput
-                  ? '#64748B'
+                const fillColor = isSelected
+                  ? '#FEF08A'
+                  : isInput
+                  ? '#DBEAFE'
+                  : isOutput
+                  ? '#D1FAE5'
+                  : '#E0E7FF';
+
+                const strokeColor = isSelected
+                  ? '#CA8A04'
+                  : isInput
+                  ? '#2563EB'
                   : isOutput
                   ? '#059669'
-                  : '#2563EB';
-
-                if (isSelected) {
-                  strokeColor = '#0F172A';
-                  fillColor = isOutput ? '#A7F3D0' : '#BFDBFE';
-                }
+                  : '#4F46E5';
 
                 return (
                   <g
@@ -536,12 +513,12 @@ export function ArchitectureSection() {
                     </text>
 
                     {/* Bias indicator pill above hidden/output neurons */}
-                    {!isInput && (
+                    {!isInput && network.biases?.[lIdx - 1]?.[nIdx] !== undefined && (
                       <text
                         x={node.x}
                         y={node.y - 20}
                         textAnchor="middle"
-                        className="text-[9px] font-mono fill-slate-500 font-medium"
+                        className="text-[9px] font-mono fill-slate-600 font-semibold"
                       >
                         b={network.biases[lIdx - 1][nIdx].toFixed(2)}
                       </text>
@@ -572,54 +549,106 @@ export function ArchitectureSection() {
         </div>
       </Card>
 
-      {/* Selected Neuron Inspector Card */}
+      {/* Selected Neuron Inspector Card with Dynamic Weight & Bias Tuning */}
       {selectedDetails ? (
         <Card
-          title={`Neuron Inspector: ${selectedDetails.layerType} Neuron #${selectedDetails.neuronIdx + 1}`}
-          badge={<Badge variant="primary">Active Selection</Badge>}
+          title={`Neuron Inspector & Parameter Tuning: ${selectedDetails.layerType} Node #${selectedDetails.neuronIdx + 1}`}
+          badge={<Badge variant="primary">Dynamic Parameters</Badge>}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <div className="p-3 bg-slate-50 rounded-md border border-slate-200">
-              <span className="font-semibold text-slate-700 block mb-1">Neuron Parameters</span>
-              <p className="text-slate-600">
-                Layer: <strong className="text-slate-900">{selectedDetails.layerType}</strong>
-              </p>
-              {!selectedDetails.isInput && (
-                <p className="text-slate-600 mt-1">
-                  Bias value: <strong className="font-mono text-blue-900">{selectedDetails.bias?.toFixed(4)}</strong>
-                </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+            {/* Column 1: Bias & Equation */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 block text-xs font-serif-heading">Neuron Parameters</span>
+                <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                  {selectedDetails.layerType}
+                </span>
+              </div>
+
+              {!selectedDetails.isInput ? (
+                <div className="space-y-3 pt-1">
+                  <Slider
+                    label="Adjust Bias (b)"
+                    value={selectedDetails.bias ?? 0}
+                    min={-2}
+                    max={2}
+                    step={0.05}
+                    onChange={handleEditBias}
+                  />
+                  <div className="pt-2 border-t border-slate-200">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold block mb-1">
+                      Textbook Summation Equation
+                    </span>
+                    <MathView
+                      math={`z = \\sum_{i=1}^{k} w_i a_i + (${(selectedDetails.bias ?? 0).toFixed(2)})`}
+                      display={true}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-slate-500 italic py-2">
+                  Input layer neurons ingest external features directly without bias or incoming weights.
+                </div>
               )}
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-md border border-slate-200">
-              <span className="font-semibold text-slate-700 block mb-1">Incoming Connections</span>
+            {/* Column 2: Incoming Weights (Editable Sliders) */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 block text-xs font-serif-heading">Incoming Synapses (Editable)</span>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  {selectedDetails.incomingWeights.length} inputs
+                </span>
+              </div>
+
               {selectedDetails.isInput ? (
-                <p className="text-slate-500 italic">Raw external input (no upstream weights)</p>
+                <p className="text-slate-500 italic py-2">Raw external feature input (no upstream weights).</p>
               ) : (
-                <div className="space-y-1 font-mono">
+                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
                   {selectedDetails.incomingWeights.map((w, idx) => (
-                    <div key={idx} className="flex justify-between">
-                      <span className="text-slate-500">From neuron #{idx + 1}:</span>
-                      <span className={w >= 0 ? 'text-blue-700 font-medium' : 'text-red-600 font-medium'}>
-                        {w >= 0 ? `+${w.toFixed(4)}` : w.toFixed(4)}
-                      </span>
-                    </div>
+                    <Slider
+                      key={idx}
+                      label={`Weight w_${idx + 1} (From Node ${idx + 1})`}
+                      value={w}
+                      min={-3}
+                      max={3}
+                      step={0.05}
+                      onChange={(val) => handleEditIncomingWeight(idx, val)}
+                    />
                   ))}
                 </div>
               )}
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-md border border-slate-200">
-              <span className="font-semibold text-slate-700 block mb-1">Outgoing Synapses</span>
+            {/* Column 3: Outgoing Synapses */}
+            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 block text-xs font-serif-heading">Outgoing Synapses</span>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  {selectedDetails.outgoingWeights.length} targets
+                </span>
+              </div>
+
               {selectedDetails.isOutput ? (
-                <p className="text-slate-500 italic">Final network output (ŷ)</p>
+                <p className="text-slate-500 italic py-2">Final network output ŷ (no downstream layers).</p>
               ) : (
-                <div className="space-y-1 font-mono">
+                <div className="space-y-2 font-mono">
                   {selectedDetails.outgoingWeights.map(({ destIdx, weight }) => (
-                    <div key={destIdx} className="flex justify-between">
-                      <span className="text-slate-500">To next neuron #{destIdx + 1}:</span>
-                      <span className={(typeof weight === 'number' && weight >= 0) ? 'text-blue-700 font-medium' : 'text-red-600 font-medium'}>
-                        {typeof weight === 'number' ? (weight >= 0 ? `+${weight.toFixed(4)}` : weight.toFixed(4)) : '0.0000'}
+                    <div
+                      key={destIdx}
+                      className="flex justify-between items-center p-2 bg-white rounded-lg border border-slate-200/80 shadow-2xs"
+                    >
+                      <span className="text-slate-600 font-sans text-xs">To Next Node #{destIdx + 1}:</span>
+                      <span
+                        className={`font-bold ${
+                          typeof weight === 'number' && weight >= 0 ? 'text-blue-700' : 'text-rose-600'
+                        }`}
+                      >
+                        {typeof weight === 'number'
+                          ? weight >= 0
+                            ? `+${weight.toFixed(4)}`
+                            : weight.toFixed(4)
+                          : '0.0000'}
                       </span>
                     </div>
                   ))}
@@ -629,10 +658,46 @@ export function ArchitectureSection() {
           </div>
         </Card>
       ) : (
-        <div className="p-4 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center text-xs text-slate-500">
-          Click any neuron circle in the diagram above to inspect its incoming weights, bias value, and outgoing synapses.
+        <div className="p-4 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500">
+          Click any neuron circle in the diagram above to inspect and dynamically tune its incoming weights and bias.
         </div>
       )}
+
+      {/* Matrix Shapes & Parameter Equations Card with KaTeX */}
+      <Card
+        title="Layer-by-Layer Matrix Dimensions & Formulas"
+        subtitle="Textbook algebraic dimensions for weight matrices and bias vectors"
+        badge={<Badge variant="navy">Linear Algebra</Badge>}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-2">
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block font-serif-heading">
+              General Layer Transformation
+            </span>
+            <MathView
+              math="\mathbf{z}^{(l)} = W^{(l)} \mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}, \quad \mathbf{a}^{(l)} = f(\mathbf{z}^{(l)})"
+              display={true}
+            />
+            <p className="text-xs text-slate-600 leading-relaxed pt-1">
+              Where $W^{(l)}$ maps activation vector $\mathbf{a}^{(l-1)}$ to pre-activation vector $\mathbf{z}^{(l)}$, and $\mathbf{b}^{(l)}$ provides translational threshold shifts.
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/90 space-y-2">
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block font-serif-heading">
+              Current Architecture Dimensions
+            </span>
+            <div className="space-y-1.5 pt-1">
+              {parameterStats.layerStats.map((st, i) => (
+                <div key={i} className="flex justify-between items-center text-xs p-2 bg-white rounded-lg border border-slate-200 shadow-2xs">
+                  <span className="font-medium text-slate-700">{st.fromName} → {st.toName}:</span>
+                  <MathView math={`W \\in \\mathbb{R}^{${st.wShape.replace('[', '').replace(']', '')}}, \\quad \\mathbf{b} \\in \\mathbb{R}^{${st.bShape.replace('[', '').replace(']', '')}}`} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* Syllabus Explanation Card */}
       <ExplanationCard

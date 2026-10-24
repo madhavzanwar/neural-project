@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { MathView } from './MathView.jsx';
 
-export function Formula({ formula, note, label }) {
+export function Formula({ formula, latex, note, label }) {
   const [copied, setCopied] = useState(false);
+  const mathText = latex || formula || '';
 
   const handleCopy = () => {
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(formula);
+      navigator.clipboard.writeText(mathText);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }
   };
 
   return (
-    <div className="group relative bg-slate-50/90 hover:bg-slate-50 border border-slate-200/90 hover:border-blue-200 rounded-xl p-3.5 my-2.5 font-mono text-sm text-slate-800 transition-all duration-200 shadow-xs hover:shadow-sm">
-      <div className="flex items-center justify-between gap-2 mb-1.5">
+    <div className="group relative bg-slate-50/90 hover:bg-slate-50 border border-slate-200/90 hover:border-blue-200 rounded-xl p-3.5 my-2.5 transition-all duration-200 shadow-xs hover:shadow-sm">
+      <div className="flex items-center justify-between gap-2 mb-1">
         {label && (
           <span className="text-[11px] uppercase tracking-wider text-slate-500 font-sans font-bold">
             {label}
@@ -39,8 +41,12 @@ export function Formula({ formula, note, label }) {
           )}
         </button>
       </div>
-      <div className="text-blue-900 font-semibold tracking-wide overflow-x-auto py-0.5 scrollbar-thin">
-        {formula}
+      <div className="text-blue-900 font-medium py-0.5 overflow-x-auto scrollbar-thin">
+        {latex ? (
+          <MathView math={latex} display={true} />
+        ) : (
+          <MathView math={formula} display={true} />
+        )}
       </div>
       {note && (
         <div className="text-xs text-slate-600 font-sans mt-2 pt-2 border-t border-slate-200/60 leading-relaxed">
