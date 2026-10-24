@@ -737,7 +737,7 @@ export function TrainingSection() {
               display={true}
             />
             <p className="text-[11px] text-slate-600 leading-snug pt-1">
-              Computes intermediate pre-activations and layer states up to final prediction $\hat{y}$.
+              Computes intermediate pre-activations and layer states up to final prediction <MathView math="\hat{y}" inline />.
             </p>
           </div>
 
@@ -789,7 +789,7 @@ export function TrainingSection() {
               display={true}
             />
             <p className="text-[11px] text-slate-600 leading-snug pt-1">
-              Steps parameters in the direction of steepest descent scaled by learning rate $\eta$.
+              Steps parameters in the direction of steepest descent scaled by learning rate <MathView math="\eta" inline />.
             </p>
           </div>
         </div>

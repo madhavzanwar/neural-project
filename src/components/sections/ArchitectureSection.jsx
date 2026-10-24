@@ -679,7 +679,7 @@ export function ArchitectureSection() {
               display={true}
             />
             <p className="text-xs text-slate-600 leading-relaxed pt-1">
-              Where $W^{(l)}$ maps activation vector $\mathbf{a}^{(l-1)}$ to pre-activation vector $\mathbf{z}^{(l)}$, and $\mathbf{b}^{(l)}$ provides translational threshold shifts.
+              Where <MathView math="W^{(l)}" inline /> maps activation vector <MathView math="\mathbf{a}^{(l-1)}" inline /> to pre-activation vector <MathView math="\mathbf{z}^{(l)}" inline />, and <MathView math="\mathbf{b}^{(l)}" inline /> provides translational threshold shifts.
             </p>
           </div>
 
