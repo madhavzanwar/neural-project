@@ -52,8 +52,8 @@ export function WeightInitSection() {
 
   // Manual matrix cell editing handler
   const handleEditMatrixWeight = (layerIdx, rowIdx, colIdx, rawVal) => {
-    const val = parseFloat(rawVal);
-    if (isNaN(val)) return;
+    const parsed = parseFloat(rawVal);
+    const val = isNaN(parsed) ? 0 : parsed;
     setCurrentNet((prev) => {
       const newW = prev.weights.map((l, l_i) =>
         l_i === layerIdx
