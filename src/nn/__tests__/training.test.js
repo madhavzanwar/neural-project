@@ -77,4 +77,20 @@ describe('Training Loop & Evaluation (Syllabus Unit II)', () => {
     expect(Number.isFinite(res.loss)).toBe(true);
     expect(Number.isFinite(res.accuracy)).toBe(true);
   });
+
+  it('safely handles corrupted sample labels without NaN propagation', () => {
+    const net = initNetwork([2, 3, 1], 'xavier');
+    const dirtyData = [
+      { input: [0, 1], label: NaN },
+      { input: [1, 0], label: undefined },
+      { input: [1, 1], label: 1 },
+    ];
+    const trainRes = trainOneEpoch(net.weights, net.biases, ['relu'], 0.1, dirtyData);
+    expect(Number.isFinite(trainRes.loss)).toBe(true);
+    expect(Number.isFinite(trainRes.accuracy)).toBe(true);
+
+    const evalRes = evaluateDataset(net.weights, net.biases, ['relu'], dirtyData);
+    expect(Number.isFinite(evalRes.avgLoss)).toBe(true);
+    expect(Number.isFinite(evalRes.accuracy)).toBe(true);
+  });
 });

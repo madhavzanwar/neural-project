@@ -32,13 +32,15 @@ export function ArchitectureSection() {
   // Handler to update incoming weight of selected neuron
   const handleEditIncomingWeight = (upstreamIdx, newVal) => {
     if (!selectedNeuron || selectedNeuron.layerIdx === 0) return;
+    const val = Number(newVal);
+    if (!Number.isFinite(val)) return;
     const { layerIdx, neuronIdx } = selectedNeuron;
     setNetwork((prev) => {
       const newWeights = prev.weights.map((l, lIdx) => {
         if (lIdx !== layerIdx - 1) return l;
         return l.map((row, rIdx) => {
           if (rIdx !== neuronIdx) return row;
-          return row.map((w, cIdx) => (cIdx === upstreamIdx ? Number(newVal) : w));
+          return row.map((w, cIdx) => (cIdx === upstreamIdx ? val : w));
         });
       });
       return { ...prev, weights: newWeights };
@@ -48,11 +50,13 @@ export function ArchitectureSection() {
   // Handler to update bias of selected neuron
   const handleEditBias = (newVal) => {
     if (!selectedNeuron || selectedNeuron.layerIdx === 0) return;
+    const val = Number(newVal);
+    if (!Number.isFinite(val)) return;
     const { layerIdx, neuronIdx } = selectedNeuron;
     setNetwork((prev) => {
       const newBiases = prev.biases.map((bLayer, lIdx) => {
         if (lIdx !== layerIdx - 1) return bLayer;
-        return bLayer.map((b, nIdx) => (nIdx === neuronIdx ? Number(newVal) : b));
+        return bLayer.map((b, nIdx) => (nIdx === neuronIdx ? val : b));
       });
       return { ...prev, biases: newBiases };
     });
@@ -475,10 +479,21 @@ export function ArchitectureSection() {
                 return (
                   <g
                     key={`neuron-${lIdx}-${nIdx}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Select neuron ${isInput ? `x${nIdx + 1}` : isOutput ? 'ŷ' : `h${nIdx + 1}`} in ${layerNames[lIdx]}`}
                     onClick={() => setSelectedNeuron({ layerIdx: lIdx, neuronIdx: nIdx })}
-                    className="cursor-pointer group"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedNeuron({ layerIdx: lIdx, neuronIdx: nIdx });
+                      }
+                    }}
+                    className="cursor-pointer group focus:outline-none"
                     style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
                   >
+                    {/* Extended invisible touch target for mobile devices */}
+                    <circle cx={node.x} cy={node.y} r={24} fill="transparent" />
                     {/* Pulsing ring if selected */}
                     {isSelected && (
                       <circle

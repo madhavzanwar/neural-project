@@ -378,8 +378,17 @@ export function TrainingSection() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setIsTraining(!isTraining)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs cursor-pointer transition-all shadow-xs active:scale-[0.98] ${
+              type="button"
+              onClick={() => {
+                const next = !isTraining;
+                isTrainingRef.current = next;
+                if (!next && animationRef.current) {
+                  cancelAnimationFrame(animationRef.current);
+                  animationRef.current = null;
+                }
+                setIsTraining(next);
+              }}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs cursor-pointer transition-all duration-150 shadow-xs active:scale-[0.98] ${
                 isTraining
                   ? 'bg-amber-600 hover:bg-amber-700 text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -390,6 +399,7 @@ export function TrainingSection() {
             </button>
 
             <button
+              type="button"
               disabled={isTraining}
               onClick={() => stepTraining(1)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors active:scale-[0.98]"
@@ -399,6 +409,7 @@ export function TrainingSection() {
             </button>
 
             <button
+              type="button"
               disabled={isTraining}
               onClick={() => stepTraining(10)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 disabled:opacity-40 cursor-pointer transition-colors active:scale-[0.98]"
@@ -408,6 +419,7 @@ export function TrainingSection() {
             </button>
 
             <button
+              type="button"
               onClick={() => setShowManualTuning(!showManualTuning)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-colors cursor-pointer active:scale-[0.98] ${
                 showManualTuning
@@ -420,6 +432,7 @@ export function TrainingSection() {
             </button>
 
             <button
+              type="button"
               onClick={resetNetwork}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 cursor-pointer transition-colors active:scale-[0.98]"
             >
@@ -429,7 +442,7 @@ export function TrainingSection() {
           </div>
         }
       >
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           {/* Dataset Selector */}
           <div>
             <label className="block font-semibold text-slate-700 mb-1.5 uppercase tracking-wider text-[11px]">
@@ -460,7 +473,7 @@ export function TrainingSection() {
               step={0.05}
               onChange={setLearningRate}
             />
-            <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
               <span>0.05 (Slow)</span>
               <span>1.00 (Fast)</span>
             </div>
@@ -476,7 +489,7 @@ export function TrainingSection() {
               step={1}
               onChange={setHiddenSize}
             />
-            <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
               <span>2</span>
               <span>4</span>
               <span>6</span>
@@ -642,7 +655,7 @@ export function TrainingSection() {
               ref={canvasRef}
               className="rounded-xl border border-slate-300/90 shadow-xs"
             />
-            <div className="flex items-center justify-center gap-6 mt-3 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 mt-3 text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-rose-600"></span>
                 <span className="font-medium">Class 0 Points</span>
@@ -651,7 +664,7 @@ export function TrainingSection() {
                 <span className="w-3 h-3 rounded-full bg-blue-600"></span>
                 <span className="font-medium">Class 1 Points</span>
               </span>
-              <span className="text-[11px] text-slate-400 italic">
+              <span className="text-[11px] text-slate-500 italic">
                 Boundary: p = 0.5 contour line
               </span>
             </div>
@@ -665,7 +678,7 @@ export function TrainingSection() {
         subtitle="Genuine per-sample outputs, target comparison, and sample BCE loss"
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+          <table className="w-full min-w-[620px] text-xs text-left border-collapse">
             <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
               <tr>
                 <th className="py-2.5 px-3">Input [x₁, x₂]</th>
@@ -724,7 +737,7 @@ export function TrainingSection() {
         subtitle="Syllabus Unit II: 4. Backpropagation algorithm derivation summary"
         badge={<Badge variant="unit2">Algorithm Core</Badge>}
       >
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           {/* Step 1 */}
           <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl space-y-1.5">
             <span className="font-bold text-blue-900 block font-serif-heading">1. Forward Pass</span>

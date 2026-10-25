@@ -11,7 +11,11 @@ export function Slider({
   ticks = [],
   color = '#2563EB',
 }) {
-  const percentage = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  const range = max - min;
+  const numVal = Number(value);
+  const percentage = range > 0 && Number.isFinite(numVal)
+    ? Math.max(0, Math.min(100, ((numVal - min) / range) * 100))
+    : 0;
 
   return (
     <div className="space-y-1.5">
@@ -34,7 +38,8 @@ export function Slider({
         min={min}
         max={max}
         step={step}
-        value={value}
+        value={Number.isFinite(numVal) ? numVal : min}
+        aria-label={label || 'slider'}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="custom-range"
         style={{
@@ -42,7 +47,7 @@ export function Slider({
         }}
       />
       {ticks.length > 0 && (
-        <div className="flex justify-between text-[10px] text-slate-400 font-mono px-0.5">
+        <div className="flex justify-between text-[10px] text-slate-500 font-mono px-0.5">
           {ticks.map((t) => (
             <span key={t}>{t}</span>
           ))}

@@ -93,6 +93,7 @@ export function ActivationsSection() {
           return (
             <button
               key={act.id}
+              type="button"
               onClick={() => setSelectedFunction(act.id)}
               className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                 isSelected
@@ -198,6 +199,7 @@ export function ActivationsSection() {
                   {[-3.0, -1.0, 0.0, 1.0, 3.0].map((val) => (
                     <button
                       key={val}
+                      type="button"
                       onClick={() => setInputValue(val)}
                       className={`flex-1 py-1 text-[11px] font-mono rounded border cursor-pointer transition-colors ${
                         inputValue === val

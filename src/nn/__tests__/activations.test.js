@@ -17,6 +17,10 @@ describe('Activation Functions (Syllabus Unit I)', () => {
     it('never produces NaN or Infinity even with extreme inputs', () => {
       expect(fn(1000)).toBeCloseTo(1, 6);
       expect(fn(-1000)).toBeCloseTo(0, 6);
+      expect(fn(Infinity)).toBe(1);
+      expect(fn(-Infinity)).toBe(0);
+      expect(fn(NaN)).toBe(0.5);
+      expect(derivative(NaN)).toBe(0);
     });
 
     it('computes maximum derivative of 0.25 at x = 0', () => {
@@ -75,6 +79,12 @@ describe('Activation Functions (Syllabus Unit I)', () => {
       const x = 0.8;
       const t = Math.tanh(x);
       expect(derivative(x)).toBeCloseTo(1 - t * t, 6);
+    });
+
+    it('derivative remains strictly non-negative and finite across extreme saturation values', () => {
+      expect(derivative(100)).toBe(0);
+      expect(derivative(-100)).toBe(0);
+      expect(derivative(1000)).toBeGreaterThanOrEqual(0);
     });
   });
 

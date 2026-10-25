@@ -72,5 +72,19 @@ describe('Numerical Gradient Verification (Syllabus Unit II)', () => {
     const resOOB = runGradientCheck(net.weights, net.biases, ['relu'], 10, 0, 0, 1e-4, XOR_DATA);
     expect(resOOB.passed).toBe(false);
     expect(resOOB.error).toContain('out of bounds');
+
+    // Bounds checking for neuron j and input weight k
+    const resJ = runGradientCheck(net.weights, net.biases, ['relu'], 0, 99, 0, 1e-4, XOR_DATA);
+    expect(resJ.passed).toBe(false);
+    expect(resJ.error).toContain('Neuron index j=99 out of bounds');
+
+    const resK = runGradientCheck(net.weights, net.biases, ['relu'], 0, 0, 99, 1e-4, XOR_DATA);
+    expect(resK.passed).toBe(false);
+    expect(resK.error).toContain('Input weight index k=99 out of bounds');
+
+    // Invalid weights/biases
+    const resInvalid = runGradientCheck(null, null, ['relu'], 0, 0, 0, 1e-4, XOR_DATA);
+    expect(resInvalid.passed).toBe(false);
+    expect(resInvalid.error).toContain('Invalid or empty');
   });
 });

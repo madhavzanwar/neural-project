@@ -60,16 +60,17 @@ export function Navbar({ activeSection, onSelectSection }) {
       </div>
 
       {/* Main Tab Navigation */}
-      <div className="border-t border-slate-100 bg-slate-50/60 overflow-x-auto scrollbar-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 py-1.5 min-w-max">
+      <div className="relative border-t border-slate-100 bg-slate-50/60 overflow-x-auto scroll-smooth [mask-image:linear-gradient(to_right,white_88%,transparent_100%)] sm:[mask-image:none]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1.5 py-1.5 min-w-max">
           {SECTIONS.map((sec) => {
             const Icon = sec.icon;
             const isActive = activeSection === sec.id;
             return (
               <button
                 key={sec.id}
+                type="button"
                 onClick={() => onSelectSection(sec.id)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 text-xs rounded-lg transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+                className={`flex items-center gap-2 px-3.5 py-2 sm:py-1.5 min-h-[44px] sm:min-h-[36px] text-xs rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap active:scale-95 ${
                   isActive
                     ? 'bg-white text-blue-950 shadow-xs border border-slate-200/80 font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-medium'
@@ -81,7 +82,7 @@ export function Navbar({ activeSection, onSelectSection }) {
                   className={`text-[9.5px] px-1.5 py-0.2 rounded font-mono ${
                     isActive
                       ? 'bg-blue-100 text-blue-800 font-semibold'
-                      : 'bg-slate-200/60 text-slate-500'
+                      : 'bg-slate-200/90 text-slate-700'
                   }`}
                 >
                   {sec.tag}

@@ -15,11 +15,12 @@ export function ExplanationCard({
   return (
     <div className="bg-slate-50/70 border border-slate-200/90 rounded-xl overflow-hidden my-4 text-sm shadow-xs transition-all duration-200">
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full px-4 py-3 bg-slate-100/80 hover:bg-slate-200/60 border-b border-slate-200/70 flex items-center justify-between text-left transition-colors cursor-pointer group"
         aria-expanded={expanded}
       >
-        <div className="flex items-center gap-2.5 text-slate-800 font-semibold text-xs md:text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-slate-800 font-semibold text-xs md:text-sm flex-1 min-w-0 pr-2">
           <BookOpen className="w-4 h-4 text-blue-700 shrink-0" />
           <span className="font-serif-heading">{title}</span>
           {syllabusTopic && (
@@ -29,7 +30,7 @@ export function ExplanationCard({
           )}
         </div>
         <div
-          className={`p-1 rounded-full text-slate-500 group-hover:text-slate-800 group-hover:bg-slate-200/80 transition-transform duration-200 ${
+          className={`p-1 rounded-full text-slate-500 group-hover:text-slate-800 group-hover:bg-slate-200/80 shrink-0 transition-transform duration-200 ${
             expanded ? 'rotate-180' : 'rotate-0'
           }`}
         >

@@ -86,10 +86,11 @@ export function ConceptsSection() {
       </div>
 
       {/* Syllabus Tab Selector */}
-      <div className="flex border-b border-slate-200 gap-4">
+      <div className="flex border-b border-slate-200 gap-2 sm:gap-4 overflow-x-auto scrollbar-none pb-px">
         <button
           onClick={() => setActiveTab('unit1')}
-          className={`pb-3 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+          type="button"
+          className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 cursor-pointer transition-colors whitespace-nowrap min-h-[44px] shrink-0 ${
             activeTab === 'unit1'
               ? 'border-blue-600 text-blue-900'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -99,7 +100,8 @@ export function ConceptsSection() {
         </button>
         <button
           onClick={() => setActiveTab('unit2')}
-          className={`pb-3 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+          type="button"
+          className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 cursor-pointer transition-colors whitespace-nowrap min-h-[44px] shrink-0 ${
             activeTab === 'unit2'
               ? 'border-blue-600 text-blue-900'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -109,7 +111,8 @@ export function ConceptsSection() {
         </button>
         <button
           onClick={() => setActiveTab('viva')}
-          className={`pb-3 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+          type="button"
+          className={`pb-3 text-xs sm:text-sm font-semibold border-b-2 cursor-pointer transition-colors whitespace-nowrap min-h-[44px] shrink-0 ${
             activeTab === 'viva'
               ? 'border-blue-600 text-blue-900'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -224,7 +227,7 @@ export function ConceptsSection() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="font-bold text-blue-900 block mb-1">Sigmoid Function:</span>
-                  <MathView math="\sigma(x) = rac{1}{1 + e^{-x}}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-2" />
+                  <MathView math="\sigma(x) = \frac{1}{1 + e^{-x}}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-2" />
                   <p className="text-slate-600 mt-0.5 leading-relaxed">Range <MathView math="(0, 1)" inline />. Smooth probabilistic S-curve. Standard choice for binary classification output layers. Suffers from vanishing gradient for <MathView math="|x| > 3" inline />.</p>
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
@@ -234,7 +237,7 @@ export function ConceptsSection() {
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="font-bold text-purple-800 block mb-1">Hyperbolic Tangent (Tanh):</span>
-                  <MathView math="	anh(x) = rac{e^x - e^{-x}}{e^x + e^{-x}}" display className="bg-white p-2 rounded border border-slate-200 text-purple-900 mb-2" />
+                  <MathView math="\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}" display className="bg-white p-2 rounded border border-slate-200 text-purple-900 mb-2" />
                   <p className="text-slate-600 mt-0.5 leading-relaxed">Range <MathView math="(-1, 1)" inline />. Strictly zero-centered, which accelerates gradient descent compared to Sigmoid in intermediate hidden layers.</p>
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
@@ -282,9 +285,8 @@ export function ConceptsSection() {
 
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="font-bold text-slate-900 block mb-0.5">2. Perceptron Learning Rule (Rosenblatt, 1958):</span>
-                  <MathView math="\mathbf{w}^{(	ext{new})} = \mathbf{w}^{(	ext{old})} + \eta (y - \hat{y})\mathbf{x}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-1.5" />
-                  <p className="mt-1 leading-relaxed">Updates weights only when a classification error occurs (<MathView math="y 
-eq \hat{y}" inline />). Guaranteed to converge in finite steps if and only if classes are linearly separable.</p>
+                  <MathView math="\mathbf{w}^{(\text{new})} = \mathbf{w}^{(\text{old})} + \eta (y - \hat{y})\mathbf{x}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-1.5" />
+                  <p className="mt-1 leading-relaxed">Updates weights only when a classification error occurs (<MathView math="y \neq \hat{y}" inline />). Guaranteed to converge in finite steps if and only if classes are linearly separable.</p>
                 </div>
 
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
@@ -295,7 +297,7 @@ eq \hat{y}" inline />). Guaranteed to converge in finite steps if and only if cl
 
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="font-bold text-slate-900 block mb-0.5">4. Correlation Learning Rule:</span>
-                  <MathView math="\Delta w_i = \eta \cdot x_i \cdot y_{	ext{target}}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-1.5" />
+                  <MathView math="\Delta w_i = \eta \cdot x_i \cdot y_{\text{target}}" display className="bg-white p-2 rounded border border-slate-200 text-blue-900 mb-1.5" />
                   <p className="mt-1 leading-relaxed">A supervised variant of Hebbian learning where synaptic weight adjustment is directly driven by the cross-correlation between input stimulus and teacher response.</p>
                 </div>
               </div>
@@ -770,10 +772,11 @@ function TopicItem({ id, title, tag, isInteractive, expanded, onToggle, query = 
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all shadow-xs">
       <button
+        type="button"
         onClick={onToggle}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-50 cursor-pointer transition-colors"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0 pr-2">
           <span className="font-semibold text-xs text-slate-900">{title}</span>
           <span
             className={`text-[10px] px-2 py-0.5 rounded font-mono ${
@@ -783,7 +786,7 @@ function TopicItem({ id, title, tag, isInteractive, expanded, onToggle, query = 
             {tag}
           </span>
         </div>
-        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        {isOpen ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
       </button>
       {isOpen && <div className="p-4 pt-1 border-t border-slate-100">{children}</div>}
     </div>

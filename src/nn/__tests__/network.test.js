@@ -61,6 +61,14 @@ describe('Neural Network Mathematical Core', () => {
       }
       expect(nonZeroCount).toBe(4 * 8);
     });
+
+    it('rejects invalid or non-positive layer sizes safely', () => {
+      expect(initNetwork([2, -1, 1]).weights).toEqual([]);
+      expect(initNetwork([2, 0, 1]).weights).toEqual([]);
+      expect(initNetwork([2]).weights).toEqual([]);
+      expect(initNetwork([]).weights).toEqual([]);
+      expect(initNetwork(null).weights).toEqual([]);
+    });
   });
 
   describe('Forward Propagation (Syllabus Unit I)', () => {
@@ -120,6 +128,25 @@ describe('Neural Network Mathematical Core', () => {
       const loss = computeLoss(predictions, targets);
       expect(Number.isFinite(loss)).toBe(true);
       expect(loss).toBeGreaterThan(0);
+
+      // Extreme sub-epsilon inputs (1e-18 and 1 - 1e-18)
+      const extremePreds = [[1e-18], [1 - 1e-18]];
+      const extremeLoss = computeLoss(extremePreds, targets);
+      expect(Number.isFinite(extremeLoss)).toBe(true);
+      expect(extremeLoss).toBeGreaterThan(0);
+    });
+
+    it('supports multi-dimensional output predictions and targets in computeLoss and computeMSE', () => {
+      // 2 samples, 2 outputs each
+      const multiPreds = [[0.9, 0.1], [0.2, 0.8]];
+      const multiTargets = [[1, 0], [0, 1]];
+      const loss = computeLoss(multiPreds, multiTargets);
+      expect(Number.isFinite(loss)).toBe(true);
+      expect(loss).toBeLessThan(0.4);
+
+      const mse = computeMSE(multiPreds, multiTargets);
+      expect(Number.isFinite(mse)).toBe(true);
+      expect(mse).toBeLessThan(0.1);
     });
 
     it('gracefully handles 1D array predictions in computeLoss and computeMSE', () => {
@@ -179,6 +206,31 @@ describe('Neural Network Mathematical Core', () => {
       expect(dBiases).toHaveLength(2);
       expect(Number.isFinite(dWeights[0][0][0])).toBe(true);
     });
+
+    it('handles target array shorter than output layer in backprop without NaN', () => {
+      const net = initNetwork([2, 3, 2], 'xavier'); // 2 output neurons
+      const { activations, preActivations } = forwardPass([0.5, 0.5], net.weights, net.biases, 'relu', 'sigmoid');
+      // Pass target with only 1 element
+      const { dWeights, dBiases } = backprop([1], activations, preActivations, net.weights, 'relu');
+      for (const layer of dWeights) {
+        for (const row of layer) {
+          for (const w of row) {
+            expect(Number.isFinite(w)).toBe(true);
+          }
+        }
+      }
+    });
+
+    it('handles non-finite learning rate in updateWeights safely', () => {
+      const weights = [[[1.0, 2.0]]];
+      const biases = [[0.5]];
+      const dWeights = [[[0.2, -0.4]]];
+      const dBiases = [[0.1]];
+
+      const updatedNaN = updateWeights(weights, biases, dWeights, dBiases, NaN);
+      expect(Number.isFinite(updatedNaN.weights[0][0][0])).toBe(true);
+      expect(Number.isFinite(updatedNaN.biases[0][0])).toBe(true);
+    });
   });
 
   describe('Decision Boundary Sampling', () => {
@@ -193,6 +245,11 @@ describe('Neural Network Mathematical Core', () => {
           expect(val).toBeLessThanOrEqual(1);
         }
       }
+    });
+
+    it('handles empty or invalid weights in computeDecisionBoundary safely', () => {
+      expect(computeDecisionBoundary([], [])).toEqual([]);
+      expect(computeDecisionBoundary(null, null)).toEqual([]);
     });
   });
 });

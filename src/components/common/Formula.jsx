@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { MathView } from './MathView.jsx';
 
 export function Formula({ formula, latex, note, label }) {
   const [copied, setCopied] = useState(false);
+  const timeoutRef = useRef(null);
   const mathText = latex || formula || '';
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const handleCopy = () => {
     if (navigator?.clipboard?.writeText) {
-      navigator.clipboard.writeText(mathText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      navigator.clipboard.writeText(mathText)
+        .then(() => {
+          setCopied(true);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          timeoutRef.current = setTimeout(() => setCopied(false), 1500);
+        })
+        .catch((err) => {
+          console.warn('Clipboard write error:', err);
+        });
     }
   };
 
@@ -26,7 +39,7 @@ export function Formula({ formula, latex, note, label }) {
           onClick={handleCopy}
           type="button"
           title="Copy formula text"
-          className="ml-auto inline-flex items-center gap-1 text-[11px] font-sans font-medium text-slate-400 hover:text-blue-700 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-md px-2 py-0.5 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all cursor-pointer"
+          className="ml-auto inline-flex items-center gap-1 text-[11px] font-sans font-medium text-slate-500 hover:text-blue-700 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-md px-2 py-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150 cursor-pointer"
         >
           {copied ? (
             <>

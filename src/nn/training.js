@@ -74,8 +74,9 @@ export function trainOneEpoch(
 
     const outputProb = activations[L][0];
     allPredictions.push(activations[L]);
-    const targetVal = Array.isArray(label) ? label[0] : label;
-    allTargets.push(targetVal);
+    const rawLabel = Array.isArray(label) ? label[0] : label;
+    const targetVal = Number.isFinite(rawLabel) ? rawLabel : 0;
+    allTargets.push(Array.isArray(label) ? label : [targetVal]);
 
     // Calculate real classification accuracy (threshold = 0.5)
     // Guard against NaN so invalid predictions are never counted as correct
@@ -87,11 +88,12 @@ export function trainOneEpoch(
 
     // 2. Analytical backpropagation (Chain Rule)
     const { dWeights, dBiases } = backprop(
-      Array.isArray(label) ? label : [label],
+      Array.isArray(label) ? label : [targetVal],
       activations,
       preActivations,
       weights,
-      hiddenActivationTypes
+      hiddenActivationTypes,
+      'sigmoid'
     );
 
     // 3. Accumulate gradients across all samples
@@ -155,7 +157,7 @@ export function evaluateDataset(
 
   const L = weights.length;
   let correctCount = 0;
-  const eps = 1e-12;
+  const eps = 1e-15; // Matches computeLoss IEEE 754 precision
 
   const results = dataset.map(({ input, label }) => {
     const { activations, preActivations } = forwardPass(
@@ -168,7 +170,8 @@ export function evaluateDataset(
 
     const rawOutput = activations[L][0];
     const isFiniteOutput = Number.isFinite(rawOutput);
-    const targetVal = Array.isArray(label) ? label[0] : label;
+    const rawLabel = Array.isArray(label) ? label[0] : label;
+    const targetVal = Number.isFinite(rawLabel) ? rawLabel : 0;
     const predictedClass = isFiniteOutput ? (rawOutput >= 0.5 ? 1 : 0) : -1;
     const isCorrect = isFiniteOutput && predictedClass === targetVal;
     if (isCorrect) correctCount++;
@@ -178,7 +181,7 @@ export function evaluateDataset(
       ? Math.min(100, Math.max(0, Math.abs(rawOutput - 0.5) * 2 * 100))
       : 0;
 
-    // Per-sample binary cross-entropy loss
+    // Per-sample binary cross-entropy loss (clamped with eps=1e-15 to avoid log(0) and log(1-1))
     const p = isFiniteOutput ? Math.max(eps, Math.min(1 - eps, rawOutput)) : 0.5;
     const sampleLoss = -(targetVal * Math.log(p) + (1 - targetVal) * Math.log(1 - p));
 

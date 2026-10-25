@@ -24,11 +24,13 @@ export const ACTIVATIONS = {
     pros: 'Smooth gradient, probabilistic interpretation bounded strictly between 0 and 1.',
     cons: 'Vanishing gradient problem for |x| > 3 (maximum derivative is only 0.25). Not zero-centered.',
     fn: (x) => {
+      if (!Number.isFinite(x)) return x < 0 ? 0 : (x > 0 ? 1 : 0.5);
       // Numerical clamp to prevent Math.exp overflow/underflow
       const clamped = Math.max(-500, Math.min(500, x));
       return 1 / (1 + Math.exp(-clamped));
     },
     derivative: (x) => {
+      if (!Number.isFinite(x)) return 0;
       const clamped = Math.max(-500, Math.min(500, x));
       const s = 1 / (1 + Math.exp(-clamped));
       return s * (1 - s);
@@ -64,7 +66,7 @@ export const ACTIVATIONS = {
     pros: 'Zero-centered output (mean close to 0 accelerates gradient descent convergence compared to Sigmoid).',
     cons: 'Still suffers from vanishing gradients when saturating (|x| > 2.5).',
     fn: (x) => Math.tanh(x),
-    derivative: (x) => 1 - Math.tanh(x) ** 2,
+    derivative: (x) => Math.max(0, 1 - Math.tanh(x) ** 2),
   },
   linear: {
     id: 'linear',

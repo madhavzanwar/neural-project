@@ -107,6 +107,7 @@ export function VivaQuiz() {
       action={
         submitted && (
           <button
+            type="button"
             onClick={handleReset}
             className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg cursor-pointer transition-colors font-medium active:scale-[0.98]"
           >
@@ -148,7 +149,7 @@ export function VivaQuiz() {
                 <span className="font-serif-heading flex-1">{q.question}</span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2" role="radiogroup" aria-label={q.question}>
                 {q.options.map((opt, optIdx) => {
                   const isChosen = selected === optIdx;
                   let optStyle =
@@ -168,9 +169,12 @@ export function VivaQuiz() {
                   return (
                     <button
                       key={optIdx}
+                      type="button"
+                      role="radio"
+                      aria-checked={isChosen}
                       disabled={submitted}
                       onClick={() => handleSelect(q.id, optIdx)}
-                      className={`w-full p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer active:scale-[0.99] ${optStyle}`}
+                      className={`w-full p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all duration-150 cursor-pointer active:scale-[0.99] ${optStyle}`}
                     >
                       <span
                         className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] font-mono shrink-0 mt-0.5 ${
@@ -207,16 +211,17 @@ export function VivaQuiz() {
 
         {/* Submit or Result Banner */}
         {!submitted ? (
-          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-            <span className="text-slate-500 text-[11px] font-medium">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <span className="text-slate-500 text-[11px] font-medium text-center sm:text-left">
               {answeredCount === QUESTIONS.length
                 ? 'All questions completed! Ready to submit.'
                 : `Please answer ${QUESTIONS.length - answeredCount} more questions.`}
             </span>
             <button
+              type="button"
               disabled={!allAnswered}
               onClick={() => setSubmitted(true)}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:pointer-events-none text-white font-semibold rounded-lg shadow-sm cursor-pointer transition-all active:scale-[0.98] flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] justify-center bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:pointer-events-none text-white font-semibold rounded-lg shadow-sm cursor-pointer transition-all duration-150 active:scale-[0.98] flex items-center gap-2"
             >
               <Check className="w-4 h-4" />
               <span>Submit & Evaluate Viva</span>

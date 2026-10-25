@@ -106,6 +106,7 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
 
           <div className="flex flex-wrap items-center gap-3">
             <button
+              type="button"
               onClick={onStartLearning}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl text-xs sm:text-sm transition-all shadow-md hover:shadow-blue-500/20 active:scale-[0.98] cursor-pointer"
             >
@@ -113,6 +114,7 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={() => onNavigate('concepts')}
               className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-slate-200 font-semibold px-5 py-3 rounded-xl text-xs sm:text-sm transition-all border border-white/20 active:scale-[0.98] cursor-pointer"
             >
@@ -202,8 +204,17 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
             return (
               <div
                 key={i}
+                role="button"
+                tabIndex={0}
+                aria-label={obj.title}
                 onClick={() => onNavigate(obj.section)}
-                className="group relative bg-white/95 backdrop-blur-xs border border-slate-200/90 hover:border-blue-300 hover:shadow-md p-6 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col justify-between"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onNavigate(obj.section);
+                  }
+                }}
+                className="group relative bg-white/95 backdrop-blur-xs border border-slate-200/90 hover:border-blue-300 hover:shadow-md p-6 rounded-2xl transition-all duration-200 cursor-pointer flex flex-col justify-between focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -269,7 +280,7 @@ export function OverviewSection({ onStartLearning, onNavigate }) {
 
           {/* Mapping Table */}
           <div className="overflow-x-auto border border-slate-200/90 rounded-xl shadow-xs">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full min-w-[560px] text-xs text-left border-collapse">
               <thead className="bg-slate-100/90 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3.5">Biological Element</th>

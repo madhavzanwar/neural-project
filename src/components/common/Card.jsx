@@ -28,7 +28,7 @@ export function Card({
             </div>
             {subtitle && <p className="text-xs text-slate-500 mt-0.5 leading-snug">{subtitle}</p>}
           </div>
-          {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
+          {action && <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">{action}</div>}
         </div>
       )}
       <div className="p-5">{children}</div>

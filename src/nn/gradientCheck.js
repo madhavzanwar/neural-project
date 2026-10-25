@@ -57,6 +57,19 @@ export function runGradientCheck(
     };
   }
 
+  if (!weights || !biases || !Array.isArray(weights) || !Array.isArray(biases) || weights.length === 0) {
+    return {
+      analyticalGrad: 0,
+      numericalGrad: 0,
+      absError: 0,
+      relError: 0,
+      passed: false,
+      epsilon,
+      currentWeight: 0,
+      error: 'Invalid or empty network weights/biases',
+    };
+  }
+
   const N = dataset.length;
   const L = weights.length;
 
@@ -71,6 +84,36 @@ export function runGradientCheck(
       currentWeight: 0,
       error: `Layer index l=${l} out of bounds [0, ${L - 1}]`,
     };
+  }
+
+  const numNeurons = weights[l]?.length ?? 0;
+  if (j < 0 || j >= numNeurons) {
+    return {
+      analyticalGrad: 0,
+      numericalGrad: 0,
+      absError: 0,
+      relError: 0,
+      passed: false,
+      epsilon,
+      currentWeight: 0,
+      error: `Neuron index j=${j} out of bounds [0, ${numNeurons - 1}] for layer l=${l}`,
+    };
+  }
+
+  if (!checkBias) {
+    const fanIn = weights[l][j]?.length ?? 0;
+    if (k < 0 || k >= fanIn) {
+      return {
+        analyticalGrad: 0,
+        numericalGrad: 0,
+        absError: 0,
+        relError: 0,
+        passed: false,
+        epsilon,
+        currentWeight: 0,
+        error: `Input weight index k=${k} out of bounds [0, ${fanIn - 1}] for neuron (l=${l}, j=${j})`,
+      };
+    }
   }
 
   if (epsilon <= 0) {

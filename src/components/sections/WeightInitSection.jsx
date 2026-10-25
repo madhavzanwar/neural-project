@@ -19,6 +19,47 @@ import {
   Edit3,
 } from 'lucide-react';
 
+
+function MatrixCellInput({ value, onChange, title, className }) {
+  const [localStr, setLocalStr] = useState(String(value ?? 0));
+
+  useEffect(() => {
+    setLocalStr(String(value ?? 0));
+  }, [value]);
+
+  const handleChange = (e) => {
+    const text = e.target.value;
+    setLocalStr(text);
+    if (text === '' || text === '-' || text === '.' || text === '-.') return;
+    const num = parseFloat(text);
+    if (Number.isFinite(num)) {
+      onChange(num);
+    }
+  };
+
+  const handleBlur = () => {
+    const num = parseFloat(localStr);
+    if (Number.isFinite(num)) {
+      setLocalStr(String(num));
+      onChange(num);
+    } else {
+      setLocalStr(String(value ?? 0));
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={localStr}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className={className}
+      title={title}
+    />
+  );
+}
+
 export function WeightInitSection() {
   const [selectedStrategy, setSelectedStrategy] = useState('xavier');
   const [seed, setSeed] = useState(1);
@@ -51,9 +92,8 @@ export function WeightInitSection() {
   }, [currentNet]);
 
   // Manual matrix cell editing handler
-  const handleEditMatrixWeight = (layerIdx, rowIdx, colIdx, rawVal) => {
-    const parsed = parseFloat(rawVal);
-    const val = isNaN(parsed) ? 0 : parsed;
+  const handleEditMatrixWeight = (layerIdx, rowIdx, colIdx, val) => {
+    if (!Number.isFinite(val)) return;
     setCurrentNet((prev) => {
       const newW = prev.weights.map((l, l_i) =>
         l_i === layerIdx
@@ -184,7 +224,7 @@ export function WeightInitSection() {
           <div className="space-y-1">
             <span className="font-bold text-sm block font-serif-heading">The Symmetry Problem Breakdown:</span>
             <p className="leading-relaxed">
-              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation ($z = 0$), and produces identical activations. During backpropagation, every hidden neuron receives identical gradients ($\delta$). Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
+              When all weights and biases are initialized to 0, every hidden neuron receives the exact same input, computes the exact same pre-activation (<MathView math="z = 0" inline />), and produces identical activations. During backpropagation, every hidden neuron receives identical gradients (<MathView math="\delta" inline />). Consequently, they update identically and remain identical forever! The network completely fails to learn non-linear patterns like XOR.
             </p>
           </div>
         </div>
@@ -199,6 +239,7 @@ export function WeightInitSection() {
             subtitle="Editable heatmap: click any cell to edit weights directly"
             action={
               <button
+                type="button"
                 onClick={handleReset}
                 className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors active:scale-[0.98]"
               >
@@ -214,7 +255,7 @@ export function WeightInitSection() {
                   <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
                     W₁: Layer 1 Weights [3 × 2]
                   </span>
-                  <span className="text-[10px] text-slate-400 font-medium">Type to edit</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Type to edit</span>
                 </div>
                 <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-2">
                   {currentNet.weights[0].map((row, rIdx) => (
@@ -224,12 +265,10 @@ export function WeightInitSection() {
                         {row.map((w, cIdx) => {
                           const col = getHeatmapColor(w);
                           return (
-                            <input
+                            <MatrixCellInput
                               key={cIdx}
-                              type="number"
-                              step="0.05"
                               value={w}
-                              onChange={(e) => handleEditMatrixWeight(0, rIdx, cIdx, e.target.value)}
+                              onChange={(val) => handleEditMatrixWeight(0, rIdx, cIdx, val)}
                               className={`py-1.5 px-2 rounded-lg border text-center font-mono text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${col.bg} ${col.border}`}
                               title={`Edit W1[${rIdx+1}, ${cIdx+1}]`}
                             />
@@ -247,7 +286,7 @@ export function WeightInitSection() {
                   <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
                     W₂: Layer 2 Weights [1 × 3]
                   </span>
-                  <span className="text-[10px] text-slate-400 font-medium">Type to edit</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Type to edit</span>
                 </div>
                 <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200/90 space-y-2">
                   {currentNet.weights[1].map((row, rIdx) => (
@@ -257,12 +296,10 @@ export function WeightInitSection() {
                         {row.map((w, cIdx) => {
                           const col = getHeatmapColor(w);
                           return (
-                            <input
+                            <MatrixCellInput
                               key={cIdx}
-                              type="number"
-                              step="0.05"
                               value={w}
-                              onChange={(e) => handleEditMatrixWeight(1, rIdx, cIdx, e.target.value)}
+                              onChange={(val) => handleEditMatrixWeight(1, rIdx, cIdx, val)}
                               className={`py-1.5 px-1.5 rounded-lg border text-center font-mono text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${col.bg} ${col.border}`}
                               title={`Edit W2[${rIdx+1}, ${cIdx+1}]`}
                             />
@@ -308,6 +345,7 @@ export function WeightInitSection() {
             <div className="space-y-3.5">
               <div className="flex gap-2">
                 <button
+                  type="button"
                   onClick={() => handleTrainStep(50)}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-all shadow-xs active:scale-[0.98]"
                 >
@@ -396,7 +434,7 @@ export function WeightInitSection() {
                         {r.isCorrect ? (
                           <CheckCircle className="w-4 h-4 text-emerald-600" />
                         ) : (
-                          <span className="text-[10px] text-amber-600 font-sans font-semibold">wrong</span>
+                          <span className="text-[10px] text-amber-800 font-sans font-semibold">wrong</span>
                         )}
                       </div>
                     </div>
