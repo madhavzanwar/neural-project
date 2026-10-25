@@ -357,7 +357,11 @@ export function ActivationsSection() {
         syllabusTopic="Unit I: 6. Activation functions"
         what="An activation function maps the weighted sum (z = W·x + b) to an output activation value. Without non-linear activations, stacking multiple layers collapses mathematically to a single linear transformation."
         why="Different functions serve different layer roles: Sigmoid bounds probabilities to (0,1) for binary classification; Tanh provides zero-centered outputs (-1,1); ReLU prevents gradient saturation in deep networks."
-        how="During forward propagation, each neuron computes a = f(z). During backpropagation, the chain rule multiplies incoming errors by the derivative f'(z)."
+        how={
+          <span>
+            During forward propagation, each neuron evaluates <MathView math="a = f(z)" inline />. During backpropagation, the multivariate chain rule multiplies incoming upstream error signals by the local analytical derivative <MathView math="f'(z)" inline />.
+          </span>
+        }
         interactionEffect="Adjusting the input slider moves the active reference dot along the mathematical curve and updates the derivative value."
       />
     </div>

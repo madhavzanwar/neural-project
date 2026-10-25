@@ -720,7 +720,11 @@ export function ArchitectureSection() {
         syllabusTopic="Unit I: 4. Neural Network Architecture & 5. Bias"
         what="A feed-forward neural network consists of layers of interconnected artificial neurons. Information moves strictly from input to output without loops."
         why="Multi-layer architectures allow the network to compose simple linear operations into complex non-linear decision boundaries capable of solving non-separable tasks."
-        how="Every neuron computes z = Σ(w · a) + b, where w represents connection weights that scale inputs, and b is the bias parameter. The sum z is passed through an activation function."
+        how={
+          <span>
+            Every neuron computes <MathView math="z = \sum_{i=1}^n w_i a_i + b" inline />, where weights <MathView math="w_i" inline /> scale incoming activations and <MathView math="b" inline /> translates the decision threshold. The sum is then evaluated by activation function <MathView math="a = f(z)" inline />.
+          </span>
+        }
         interactionEffect="Changing hidden layer count or neuron counts dynamically reconfigures the network matrix dimensions and updates the wiring diagram."
       />
     </div>

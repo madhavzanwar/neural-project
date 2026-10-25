@@ -190,28 +190,37 @@ export function WeightInitSection() {
           return (
             <button
               key={key}
+              type="button"
               onClick={() => setSelectedStrategy(key)}
-              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer shadow-xs active:scale-[0.98] ${
+              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer shadow-xs active:scale-[0.98] flex flex-col justify-between ${
                 isSelected
                   ? isZero
-                    ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20'
-                    : 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-600/20'
+                    ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/20'
+                    : 'bg-blue-50/90 border-blue-600 ring-2 ring-blue-600/20'
                   : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/40'
               }`}
             >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="font-semibold text-xs sm:text-sm text-slate-900 font-serif-heading">
-                  {item.label}
-                </span>
-                {isSelected && (
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${isZero ? 'bg-amber-500' : 'bg-blue-600'}`}
-                  ></span>
-                )}
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-xs sm:text-sm text-slate-900 font-serif-heading">
+                    {item.label}
+                  </span>
+                  {isSelected && (
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${isZero ? 'bg-amber-500' : 'bg-blue-600'}`}
+                    ></span>
+                  )}
+                </div>
+
+                {/* Mathematical Formula rendered with textbook KaTeX */}
+                <div className="my-2 py-1.5 px-2 bg-white/95 rounded-lg border border-slate-200/90 shadow-2xs flex items-center justify-center min-h-[40px] overflow-x-auto text-slate-900">
+                  <MathView math={item.scaleFormula || item.formula} inline={true} />
+                </div>
+
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  {item.description}
+                </p>
               </div>
-              <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                {item.description}
-              </p>
             </button>
           );
         })}
@@ -487,7 +496,11 @@ export function WeightInitSection() {
         syllabusTopic="Unit II: 2. Weight initialization"
         what="Weight initialization is the algorithm used to set the starting numerical parameters (W and b) of a neural network before training commences."
         why="Proper initialization prevents activations and gradients from exponentially exploding or vanishing to zero across layers. It also breaks symmetry between hidden units."
-        how="Variance scaling methods (Xavier and He) calculate the number of incoming connections (fan_in) and outgoing connections (fan_out) and scale standard deviation so variance remains constant layer to layer."
+        how={
+          <span>
+            Variance scaling algorithms calculate the number of fan-in connections (<MathView math="n_{\text{in}}" inline />) and fan-out connections (<MathView math="n_{\text{out}}" inline />). Xavier initializes weights uniformly within <MathView math="\pm\sqrt{6 / (n_{\text{in}} + n_{\text{out}})}" inline />, while He initializes from a normal distribution with <MathView math="\sigma = \sqrt{2 / n_{\text{in}}}" inline /> so that the variance of activations remains constant layer to layer.
+          </span>
+        }
         interactionEffect="Switching to 'Zero Initialization' demonstrates the complete breakdown of backpropagation symmetry, whereas Xavier converges rapidly."
       />
     </div>

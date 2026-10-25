@@ -814,7 +814,11 @@ export function TrainingSection() {
         syllabusTopic="Unit II: 3. Optimization algorithms & 4. Backpropagation"
         what="Backpropagation is the supervised learning algorithm that computes the partial derivative (gradient) of the loss function with respect to every weight and bias in the network."
         why="Without backpropagation, optimizing thousands of parameters would be intractable. Backpropagation computes exact analytical gradients in a single backward sweep."
-        how="It applies the chain rule of calculus starting from the output error and distributes credit/blame for errors backward through hidden layers."
+        how={
+          <span>
+            Backpropagation applies the multivariate chain rule of calculus starting from output loss gradient <MathView math="\frac{\partial \mathcal{L}}{\partial \hat{y}}" inline /> to compute parameter partial derivatives <MathView math="\frac{\partial \mathcal{L}}{\partial W}" inline /> and <MathView math="\frac{\partial \mathcal{L}}{\partial \mathbf{b}}" inline />, updating weights in the negative gradient direction <MathView math="W \leftarrow W - \eta \nabla_W \mathcal{L}" inline />.
+          </span>
+        }
         interactionEffect="Adjusting the learning rate alters how aggressively weights jump in parameter space. High learning rates may oscillate; low learning rates converge slowly."
       />
     </div>

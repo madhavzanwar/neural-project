@@ -930,7 +930,11 @@ export function ForwardPropSection() {
         syllabusTopic="Unit I: 11. Feed-forward neural networks"
         what="Forward propagation is the algebraic calculation process that maps network inputs to intermediate activations and final outputs layer by layer."
         why="It computes the model's actual prediction for a given set of inputs without mutating any parameters. The resulting prediction is then compared to target y to compute loss."
-        how="For each layer l: z = W[l] · a[l-1] + b[l], followed by a[l] = activation(z). All intermediate z and a vectors are stored in memory for reuse by backpropagation."
+        how={
+          <span>
+            For each successive layer <MathView math="l" inline />: linear combinations are evaluated via matrix multiplication <MathView math="\mathbf{z}^{(l)} = W^{(l)} \mathbf{a}^{(l-1)} + \mathbf{b}^{(l)}" inline />, followed by element-wise activation <MathView math="\mathbf{a}^{(l)} = f(\mathbf{z}^{(l)})" inline />. All intermediate vectors are preserved in memory cache for reuse during backpropagation.
+          </span>
+        }
         interactionEffect="Modifying any weight, bias, or input instantly recalculates the entire algebraic chain down to the exact output prediction ŷ."
       />
     </div>

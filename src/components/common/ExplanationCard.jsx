@@ -63,9 +63,9 @@ export function ExplanationCard({
               <span className="font-bold text-[11px] uppercase tracking-wider text-blue-950 block mb-1">
                 3. How does it work mathematically?
               </span>
-              <p className="text-slate-700 leading-relaxed text-xs sm:text-sm font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
+              <div className="text-slate-700 leading-relaxed text-xs sm:text-sm bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
                 {how}
-              </p>
+              </div>
             </div>
           )}
 

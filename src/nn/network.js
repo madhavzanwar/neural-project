@@ -14,7 +14,9 @@ import { ACTIVATIONS } from './activations.js';
 export const INIT_STRATEGIES = {
   xavier: {
     label: 'Xavier / Glorot (Uniform)',
-    description: 'Scale = sqrt(6 / (fan_in + fan_out)). Balances activation variance across layers. Ideal for Sigmoid and Tanh activations.',
+    formula: 'W \\sim \\mathcal{U}\\left(-\\sqrt{\\frac{6}{n_{\\text{in}} + n_{\\text{out}}}}, +\\sqrt{\\frac{6}{n_{\\text{in}} + n_{\\text{out}}}}\\right)',
+    scaleFormula: '\\text{limit} = \\pm\\sqrt{\\frac{6}{n_{\\text{in}} + n_{\\text{out}}}}',
+    description: 'Balances activation variance across layers. Ideal for Sigmoid and Tanh activations.',
     generate: (fanIn, fanOut) => {
       const limit = Math.sqrt(6.0 / Math.max(1, fanIn + fanOut));
       return (Math.random() * 2 - 1) * limit;
@@ -22,7 +24,9 @@ export const INIT_STRATEGIES = {
   },
   he: {
     label: 'He / Kaiming (Normal)',
-    description: 'Scale = sqrt(2 / fan_in). Prevents dying neurons and exploding activations. Specifically designed for ReLU activations.',
+    formula: 'W \\sim \\mathcal{N}\\left(0, \\sqrt{\\frac{2}{n_{\\text{in}}}}\\right)',
+    scaleFormula: '\\sigma = \\sqrt{\\frac{2}{n_{\\text{in}}}}',
+    description: 'Prevents dying neurons and exploding activations. Specifically designed for ReLU activations.',
     generate: (fanIn) => {
       // Box-Muller transform for standard normal distribution
       const u1 = Math.max(1e-10, Math.random());
@@ -34,12 +38,16 @@ export const INIT_STRATEGIES = {
   },
   uniform: {
     label: 'Random Uniform [-1, 1]',
-    description: 'Uniform random values between -1 and 1 without variance scaling. Simple baseline to observe saturation or slow convergence.',
+    formula: 'W \\sim \\mathcal{U}(-1, 1)',
+    scaleFormula: 'W_{ij} \\in [-1, 1]',
+    description: 'Uniform random values without variance scaling. Simple baseline to observe saturation.',
     generate: () => Math.random() * 2 - 1,
   },
   zeros: {
-    label: 'Zero Initialization (Symmetry Breakdown Demo)',
-    description: 'Initializes all weights and biases to 0. Proves why symmetry breaking is required: all hidden neurons compute identical outputs and gradients, preventing the network from learning complex features.',
+    label: 'Zero Initialization (Symmetry Demo)',
+    formula: 'W = 0, \\quad \\mathbf{b} = \\mathbf{0}',
+    scaleFormula: 'W_{ij} = 0, \\quad b_i = 0',
+    description: 'Initializes all weights and biases to 0. Proves why symmetry breaking is required for learning.',
     generate: () => 0,
   },
 };
